@@ -167,6 +167,7 @@ typedef struct {
     int (*GetMaxInputLength)();
     bool (*GetGlyph)(u16 charCode, u8 *output, int *advance);
     bool (*KeycodeToChar)(u16 keycode, u16 *output);
+    void (*OnInputStarted)();
     bool (*CanContinueInput)(u16 *inputText, int length, u16 nextChar);
     void (*OnInputComplete)(u16 *inputText, int length);
 } KeyboardGameInterface;
@@ -198,7 +199,7 @@ typedef struct VirtualKeyboard {
     KeyboardInputMethodInterface *inputMethodInterface[KEYBOARD_LANG_MAX];
 };
 
-
+void InitHeap(void *start, u32 size);
 
 void InitializeKeyboard(const KeyboardGameInterface *gameInterface);
 void FinalizeKeyboard(bool shouldSetInputStringToGame);
@@ -207,6 +208,10 @@ int HandleKeyboardInput();
 void TryAddCharToInput(u16 charCode);
 void TryAddKeycodeToInput(KeyCode keyCode);
 void RegisterKeyboardInputMethod(int lang, KeyboardInputMethodInterface *inputMethodInterface);
+
+void InitPinyinInputMethod();
+void DeinitPinyinInputMethod();
+KeyboardInputMethodInterface *GetPinyinInputMethodInterface();
 
 void InitKeyboardFont();
 void DeinitKeyboardFont();
@@ -217,9 +222,5 @@ void SetGetGlyph(bool (*GetGlyph)(u16 charCode, u8 *output, int *advance));
 bool GetExternalGlyph(u16 charCode, glImage *glyphImage, int *palIndex, int *advance);
 
 KeyboardGameInterface *GetKeyboardGameInterface();
-
-KeyboardInputMethodInterface *GetPinyinInputMethodInterface();
-void InitPinyinInputMethod();
-void DeinitPinyinInputMethod();
 
 #endif
