@@ -4,6 +4,7 @@
 #include "fs.h"
 #include "touch.h"
 
+#define KEYBOARD_BG_COLOR RGB15(30 >> 3, 144 >> 3, 255 >> 3)
 #define KEY_GLYPH_COLOR RGB15(56 >> 3, 8 >> 3, 120 >> 3)
 #define KEY_BG_COLOR RGB15(135 >> 3, 206 >> 3, 250 >> 3)
 #define KEY_BG_COLOR_PRESSED RGB15(31, 31, 31)
@@ -116,12 +117,12 @@ void InitializeKeyboard(const KeyboardGameInterface *gameInterface) {
     gVirtualKeyboard->glyphBaseline = KEY_BUTTON_HEIGHT - (KEY_BUTTON_HEIGHT - 12) / 2;
 
     glGenTextures(1, &gVirtualKeyboard->keyTexPalId);
-	glBindTexture(0, gVirtualKeyboard->keyTexPalId);
-	glColorTableEXT(0,0,4,0,0, gKeysTexPal);
+    glBindTexture(0, gVirtualKeyboard->keyTexPalId);
+    glColorTableEXT(0, 0, 4, 0, 0, gKeysTexPal);
 
     glGenTextures(1, &gVirtualKeyboard->glyphTexPalId);
-	glBindTexture(0, gVirtualKeyboard->glyphTexPalId);
-	glColorTableEXT(0,0,4,0,0, gGlyphTexPal);
+    glBindTexture(0, gVirtualKeyboard->glyphTexPalId);
+    glColorTableEXT(0, 0, 4, 0, 0, gGlyphTexPal);
 
     CreateExternalFontPalette(gVirtualKeyboard->externalGlyphKeyPalIds, KEY_GLYPH_COLOR, KEY_BG_COLOR);
     CreateExternalFontPalette(gVirtualKeyboard->externalGlyphTextBoxPalIds, TEXTBOX_GLYPH_COLOR, TEXTBOX_BG_COLOR);
@@ -198,6 +199,7 @@ void DrawKey(struct Key *key) {
 }
 
 void DrawKeyboard() {
+    glBoxFilled(0, 0, 256, 192, KEYBOARD_BG_COLOR);
     SetDefaultKeysPalette(gVirtualKeyboard->keyTexPalId);
     for (int i = 0; i < sizeof(gVirtualKeyboard->normalKeys) / sizeof(gVirtualKeyboard->normalKeys[0]); i++) {
         struct Key key = gVirtualKeyboard->normalKeys[i];

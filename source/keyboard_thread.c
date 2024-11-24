@@ -4,9 +4,9 @@
 #include <nds/arm9/video.h>
 #include <nds/arm9/videoGL.h>
 #include <nds/system.h>
-#include "heap.h"
 #include "keyboard.h"
 #include "thread.h"
+#include "touch.h"
 
 static vu32 userExit = 0;
 extern u32 OrigLauncherThreadLR;
@@ -17,8 +17,6 @@ OSThread backboardThread;
 u8 stack[512];
 
 void OS_SaveContext();
-
-s32 PXI_SendWordByFifo(u32 channel, u32 data, u32 flags);
 
 void MI_CpuCopy32( const void* src, void* dest, u32 size );
 
@@ -80,6 +78,7 @@ void MonitorThreadEntry(void* arg) {
     u32 state = 0;
     OSContext *context = &LanucherThreadContext;
     KeyboardGameInterface *interface = GetKeyboardGameInterface();
+    interface->OnThreadCreated();
     u32 addr;
     void *heap;
     for (;;)
@@ -100,8 +99,8 @@ void MonitorThreadEntry(void* arg) {
                 OS_Sleep(1);
                 break;
             case 2:
-                if (heap = interface->Alloc(24 * 1024)) {
-                    heap_init(heap, 24 * 1024);
+                if (heap = interface->Alloc(KEYBOARD_HEAP_SIZE)) {
+                    InitHeap(heap, KEYBOARD_HEAP_SIZE);
                     userExit = 0;
                     OrigLauncherThreadPC = context->pc_plus4 - 4;
                     context->lr = (u32)JumpFromLauncherThread;
@@ -201,7 +200,9 @@ void LanucherThreadExt() {
     // REG_BLDCNT = 0; // Register is write only, can't back up
     // REG_BLDALPHA = 0; // Register is write only, can't back up
     // REG_BLDY = 0; // Register is write only, can't back up
-    InitializeKeyboard(GetKeyboardGameInterface());
+    KeyboardGameInterface *interface = GetKeyboardGameInterface();
+    interface->OnInputStarted();
+    InitializeKeyboard(interface);
     InitPinyinInputMethod();
     RegisterKeyboardInputMethod(KEYBOARD_LANG_CHS, GetPinyinInputMethodInterface());
 
@@ -211,7 +212,6 @@ void LanucherThreadExt() {
         switch (state) {
         case 0:
             glBegin2D();
-            glBoxFilled(0, 0, 256, 192, RGB15(30 >> 3, 144 >> 3, 255 >> 3));
             DrawKeyboard();
             glEnd2D();
             glFlush(0);
@@ -225,9 +225,11 @@ void LanucherThreadExt() {
         default:
             break;
         }
-        PXI_SendWordByFifo(6, 0x3000000, 0);
+        RequestSamplingTPData();
         OS_WaitVBlankIntr();
     }
+
+    OS_Sleep(500);
 
     DeinitPinyinInputMethod();
     glResetTextures();
@@ -263,7 +265,7 @@ void LanucherThreadExt() {
     glMatrixMode( GL_PROJECTION );
     glLoadMatrix4x4(&matrixProjection);
 
-
+    ResetTPData();
     FinalizeKeyboard(result == 2);
     //    glFlush(0);
 

@@ -11,6 +11,8 @@
 
 #define EXTERNAL_FONT_PALETTE_SIZE 2
 
+#define KEYBOARD_HEAP_SIZE (24 * 1024)
+
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
 typedef enum {
@@ -163,6 +165,7 @@ struct VirtualKeyboard;
 typedef struct {
     void * (*Alloc)(u32 size);
     void (*Free)(void *ptr);
+    void (*OnThreadCreated)();
     bool (*ShouldShowKeyboard)();
     int (*GetMaxInputLength)();
     bool (*GetGlyph)(u16 charCode, u8 *output, int *advance);

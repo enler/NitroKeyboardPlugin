@@ -13,4 +13,8 @@ void TP_GetCalibratedPoint(TPData *disp, const TPData *raw);
 
 bool GetCalibratedPoint(int *x, int *y);
 
+void RequestSamplingTPData();
+
+void ResetTPData();
+
 #endif

@@ -9,6 +9,7 @@ SECTIONS
             *source/*.o(.text*)
             *libc.a:libc_a-memcpy-stub.o(.text.memcpy)
             *libc.a:libc_a-memset.o(.text.memset)
+            *libc.a:libc_a-memcmp.o(.text.memcmp)
             *libgcc.a:_divsi3.o(.text)
             *libgcc.a:_dvmd_tls.o(.text)
             *libnds9.a:biosCalls.o(.text.swiCopy)
