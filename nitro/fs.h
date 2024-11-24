@@ -1,0 +1,28 @@
+#ifndef NITRO_FS_H
+#define NITRO_FS_H
+
+#include <nds/ndstypes.h>
+
+typedef struct _FSFile {
+    u8 _[0x3c];
+} FSFile;
+
+typedef struct _FSOverlayInfo {
+    u8 _[44];
+} FSOverlayInfo;
+
+bool FS_LoadOverlay(u32 target, u32 id);
+void FS_Init(u32 default_dma_no );
+void FS_InitFile(FSFile *p_file);
+bool FS_OpenFile(FSFile *p_file, const char *path);
+inline u32 FS_GetLength(const FSFile *p_file) {
+    return *(u32 *)((u8*)p_file + 0x28) - *(u32 *)((u8*)p_file + 0x24);
+};
+s32 FS_ReadFile(FSFile *p_file, void *dst, s32 len);
+bool FS_CloseFile(FSFile *p_file);
+bool FS_SeekFile( FSFile *p_file, s32 offset, s32 origin );
+bool FS_LoadOverlayInfo(FSOverlayInfo *p_ovi, u32 target, u32 id);
+bool FS_LoadOverlayImage(FSOverlayInfo *p_ovi);
+void FS_StartOverlay(FSOverlayInfo *p_ovi);
+
+#endif
