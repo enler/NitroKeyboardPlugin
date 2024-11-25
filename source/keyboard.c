@@ -1,5 +1,4 @@
 #include <nds.h>
-#include <gl2d.h>
 #include "keyboard.h"
 #include "fs.h"
 #include "touch.h"

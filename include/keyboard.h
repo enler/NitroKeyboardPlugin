@@ -1,6 +1,8 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+#include <gl2d.h>
+
 #define KEY_BUTTON_WIDTH 19
 #define KEY_BUTTON_HEIGHT 20
 #define KEY_BUTTON_SPACING 1

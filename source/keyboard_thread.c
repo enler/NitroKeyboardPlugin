@@ -1,5 +1,4 @@
 #include <nds/ndstypes.h>
-#include <gl2d.h>
 #include <nds/arm9/background.h>
 #include <nds/arm9/video.h>
 #include <nds/arm9/videoGL.h>
