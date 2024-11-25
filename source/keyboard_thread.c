@@ -3,6 +3,7 @@
 #include <nds/arm9/background.h>
 #include <nds/arm9/video.h>
 #include <nds/arm9/videoGL.h>
+#include <nds/interrupts.h>
 #include <nds/system.h>
 #include "keyboard.h"
 #include "thread.h"
@@ -13,16 +14,18 @@ extern u32 OrigLauncherThreadLR;
 extern u32 OrigLauncherThreadPC;
 extern OSContext LanucherThreadContext;
 
+void JumpFromLauncherThread();
+
+void OS_SaveContext();
+void OS_WaitIrq(bool clear, u32 mask);
+
 OSThread backboardThread;
 u8 stack[512];
 
-void OS_SaveContext();
-
-void MI_CpuCopy32( const void* src, void* dest, u32 size );
-
-void OS_WaitVBlankIntr();
-
-void JumpFromLauncherThread();
+void WaitVBlankIntr() {
+    swiDelay(1);
+    OS_WaitIrq(true, IRQ_VBLANK);
+}
 
 bool GetBranchLinkAddr(u32 lr, u32 *addr) {
     if (lr >= 0x2000000 && lr <= 0x23E0000) {
@@ -78,7 +81,6 @@ void MonitorThreadEntry(void* arg) {
     u32 state = 0;
     OSContext *context = &LanucherThreadContext;
     KeyboardGameInterface *interface = GetKeyboardGameInterface();
-    interface->OnThreadCreated();
     u32 addr;
     void *heap;
     for (;;)
@@ -157,8 +159,8 @@ void LanucherThreadExt() {
     VRAM_E_CR = VRAM_ENABLE;
 
 
-    MI_CpuCopy32(VRAM_A, vramABackup, 1024 * 4);
-    MI_CpuCopy32(VRAM_E, vramEBackup, 256);
+    memcpy(vramABackup, VRAM_A, 1024 * 4);
+    memcpy(vramEBackup, VRAM_E, 256);
 
     u16 powercnt = REG_POWERCNT;
 
@@ -200,9 +202,7 @@ void LanucherThreadExt() {
     // REG_BLDCNT = 0; // Register is write only, can't back up
     // REG_BLDALPHA = 0; // Register is write only, can't back up
     // REG_BLDY = 0; // Register is write only, can't back up
-    KeyboardGameInterface *interface = GetKeyboardGameInterface();
-    interface->OnInputStarted();
-    InitializeKeyboard(interface);
+    InitializeKeyboard(GetKeyboardGameInterface());
     InitPinyinInputMethod();
     RegisterKeyboardInputMethod(KEYBOARD_LANG_CHS, GetPinyinInputMethodInterface());
 
@@ -226,7 +226,7 @@ void LanucherThreadExt() {
             break;
         }
         RequestSamplingTPData();
-        OS_WaitVBlankIntr();
+        WaitVBlankIntr();
     }
 
     OS_Sleep(500);
@@ -246,8 +246,8 @@ void LanucherThreadExt() {
     VRAM_A_CR = VRAM_ENABLE;
     VRAM_E_CR = VRAM_ENABLE;
 
-    MI_CpuCopy32(vramABackup, VRAM_A, 1024 * 4);
-    MI_CpuCopy32(vramEBackup, VRAM_E, 256);
+    memcpy(VRAM_A, vramABackup, 1024 * 4);
+    memcpy(VRAM_E, vramEBackup, 256);
     
     free(vramABackup);
     free(vramEBackup);
@@ -266,13 +266,15 @@ void LanucherThreadExt() {
     glLoadMatrix4x4(&matrixProjection);
 
     ResetTPData();
-    FinalizeKeyboard(result == 2);
+    FinalizeKeyboard(result != 2);
     //    glFlush(0);
 
     userExit = 1;
 }
 
 void StartKeyboardMonitorThread() {
+    KeyboardGameInterface *interface = GetKeyboardGameInterface();
+    interface->OnOverlayLoaded();
     OS_CreateThread(&backboardThread, MonitorThreadEntry, 0, stack + sizeof(stack), sizeof(stack), 8);
     OS_WakeupThreadDirect(&backboardThread);
 }

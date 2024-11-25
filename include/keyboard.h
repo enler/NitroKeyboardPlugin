@@ -165,14 +165,13 @@ struct VirtualKeyboard;
 typedef struct {
     void * (*Alloc)(u32 size);
     void (*Free)(void *ptr);
-    void (*OnThreadCreated)();
+    void (*OnOverlayLoaded)();
     bool (*ShouldShowKeyboard)();
     int (*GetMaxInputLength)();
     bool (*GetGlyph)(u16 charCode, u8 *output, int *advance);
     bool (*KeycodeToChar)(u16 keycode, u16 *output);
-    void (*OnInputStarted)();
     bool (*CanContinueInput)(u16 *inputText, int length, u16 nextChar);
-    void (*OnInputComplete)(u16 *inputText, int length);
+    void (*OnInputFinished)(u16 *inputText, int length, bool isCanceled);
 } KeyboardGameInterface;
 
 typedef struct {
@@ -205,7 +204,7 @@ typedef struct VirtualKeyboard {
 void InitHeap(void *start, u32 size);
 
 void InitializeKeyboard(const KeyboardGameInterface *gameInterface);
-void FinalizeKeyboard(bool shouldSetInputStringToGame);
+void FinalizeKeyboard(bool isCancelled);
 void DrawKeyboard();
 int HandleKeyboardInput();
 void TryAddCharToInput(u16 charCode);

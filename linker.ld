@@ -45,6 +45,7 @@ SECTIONS
             *libnds9.a:videoGL.o(.text.vramBlock_terminate)
             *libnds9.a:videoGL.o(.text.glAssignColorTable)
             *libnds9.a:videoGL.o(.text.glGetTexturePointer)
+            *libnds9.a:biosCalls.o(.text.swiDelay)
         }
         . = ALIGN(4);
 

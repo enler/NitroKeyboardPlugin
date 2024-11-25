@@ -128,10 +128,10 @@ void InitializeKeyboard(const KeyboardGameInterface *gameInterface) {
     CreateExternalFontPalette(gVirtualKeyboard->externalGlyphTextBoxPalIds, TEXTBOX_GLYPH_COLOR, TEXTBOX_BG_COLOR);
 }
 
-void FinalizeKeyboard(bool shouldSetInputStringToGame) {
-    if (shouldSetInputStringToGame) {
-        gVirtualKeyboard->gameInterface->OnInputComplete(gVirtualKeyboard->inputTextBox.text, gVirtualKeyboard->inputTextBox.length);
-    }
+void FinalizeKeyboard(bool isCancelled) {
+    if (gVirtualKeyboard->inputTextBox.length == 0)
+        isCancelled = true;
+    gVirtualKeyboard->gameInterface->OnInputFinished(gVirtualKeyboard->inputTextBox.text, gVirtualKeyboard->inputTextBox.length, isCancelled);
     DeinitKeyboardFont();
     free(gVirtualKeyboard->inputTextBox.text);
     free(gVirtualKeyboard);
