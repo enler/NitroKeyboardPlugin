@@ -2,27 +2,22 @@
     .section .text
     .syntax unified
     
+    .global OrigLauncherThreadLR
+    .global OrigLauncherThreadPC
+
     arm_func_start JumpFromLauncherThread
 JumpFromLauncherThread:
-    ldr lr, =OrigLauncherThreadPC
-    ldr lr, [lr]
+    ldr lr, OrigLauncherThreadPC
     push {lr}
     push {r0-r12}
     bl LanucherThreadExt
     pop {r0-r12}
-    ldr lr, =OrigLauncherThreadLR
-    ldr lr, [lr]
+    ldr lr, OrigLauncherThreadLR
     pop {pc}
-
-
-    .section .data
-    .align 2, 0
-.global OrigLauncherThreadLR
-OrigLauncherThreadLR:
-    .word 0
-.global OrigLauncherThreadPC
-OrigLauncherThreadPC:
-    .word 0
+OrigLauncherThreadLR: 
+    .word 0x0
+OrigLauncherThreadPC: 
+    .word 0x0
 
 .section .init_functions
     .word OverlayInit
