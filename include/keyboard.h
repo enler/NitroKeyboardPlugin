@@ -126,6 +126,108 @@ typedef enum {
     KEYCODE_ALT,
     KEYCODE_CAPS_LOCK = 20,
     KEYCODE_ESC = 27, // ASCII Escape
+    // 大写字母
+    KEYCODE_FULLWIDTH_A = 0xFF21, // full width 'Ａ'
+    KEYCODE_FULLWIDTH_B = 0xFF22, // full width 'Ｂ'
+    KEYCODE_FULLWIDTH_C = 0xFF23, // full width 'Ｃ'
+    KEYCODE_FULLWIDTH_D = 0xFF24, // full width 'Ｄ'
+    KEYCODE_FULLWIDTH_E = 0xFF25, // full width 'Ｅ'
+    KEYCODE_FULLWIDTH_F = 0xFF26, // full width 'Ｆ'
+    KEYCODE_FULLWIDTH_G = 0xFF27, // full width 'Ｇ'
+    KEYCODE_FULLWIDTH_H = 0xFF28, // full width 'Ｈ'
+    KEYCODE_FULLWIDTH_I = 0xFF29, // full width 'Ｉ'
+    KEYCODE_FULLWIDTH_J = 0xFF2A, // full width 'Ｊ'
+    KEYCODE_FULLWIDTH_K = 0xFF2B, // full width 'Ｋ'
+    KEYCODE_FULLWIDTH_L = 0xFF2C, // full width 'Ｌ'
+    KEYCODE_FULLWIDTH_M = 0xFF2D, // full width 'Ｍ'
+    KEYCODE_FULLWIDTH_N = 0xFF2E, // full width 'Ｎ'
+    KEYCODE_FULLWIDTH_O = 0xFF2F, // full width 'Ｏ'
+    KEYCODE_FULLWIDTH_P = 0xFF30, // full width 'Ｐ'
+    KEYCODE_FULLWIDTH_Q = 0xFF31, // full width 'Ｑ'
+    KEYCODE_FULLWIDTH_R = 0xFF32, // full width 'Ｒ'
+    KEYCODE_FULLWIDTH_S = 0xFF33, // full width 'Ｓ'
+    KEYCODE_FULLWIDTH_T = 0xFF34, // full width 'Ｔ'
+    KEYCODE_FULLWIDTH_U = 0xFF35, // full width 'Ｕ'
+    KEYCODE_FULLWIDTH_V = 0xFF36, // full width 'Ｖ'
+    KEYCODE_FULLWIDTH_W = 0xFF37, // full width 'Ｗ'
+    KEYCODE_FULLWIDTH_X = 0xFF38, // full width 'Ｘ'
+    KEYCODE_FULLWIDTH_Y = 0xFF39, // full width 'Ｙ'
+    KEYCODE_FULLWIDTH_Z = 0xFF3A, // full width 'Ｚ'
+    // 小写字母
+    KEYCODE_FULLWIDTH_a = 0xFF41, // full width 'ａ'
+    KEYCODE_FULLWIDTH_b = 0xFF42, // full width 'ｂ'
+    KEYCODE_FULLWIDTH_c = 0xFF43, // full width 'ｃ'
+    KEYCODE_FULLWIDTH_d = 0xFF44, // full width 'ｄ'
+    KEYCODE_FULLWIDTH_e = 0xFF45, // full width 'ｅ'
+    KEYCODE_FULLWIDTH_f = 0xFF46, // full width 'ｆ'
+    KEYCODE_FULLWIDTH_g = 0xFF47, // full width 'ｇ'
+    KEYCODE_FULLWIDTH_h = 0xFF48, // full width 'ｈ'
+    KEYCODE_FULLWIDTH_i = 0xFF49, // full width 'ｉ'
+    KEYCODE_FULLWIDTH_j = 0xFF4A, // full width 'ｊ'
+    KEYCODE_FULLWIDTH_k = 0xFF4B, // full width 'ｋ'
+    KEYCODE_FULLWIDTH_l = 0xFF4C, // full width 'ｌ'
+    KEYCODE_FULLWIDTH_m = 0xFF4D, // full width 'ｍ'
+    KEYCODE_FULLWIDTH_n = 0xFF4E, // full width 'ｎ'
+    KEYCODE_FULLWIDTH_o = 0xFF4F, // full width 'ｏ'
+    KEYCODE_FULLWIDTH_p = 0xFF50, // full width 'ｐ'
+    KEYCODE_FULLWIDTH_q = 0xFF51, // full width 'ｑ'
+    KEYCODE_FULLWIDTH_r = 0xFF52, // full width 'ｒ'
+    KEYCODE_FULLWIDTH_s = 0xFF53, // full width 'ｓ'
+    KEYCODE_FULLWIDTH_t = 0xFF54, // full width 'ｔ'
+    KEYCODE_FULLWIDTH_u = 0xFF55, // full width 'ｕ'
+    KEYCODE_FULLWIDTH_v = 0xFF56, // full width 'ｖ'
+    KEYCODE_FULLWIDTH_w = 0xFF57, // full width 'ｗ'
+    KEYCODE_FULLWIDTH_x = 0xFF58, // full width 'ｘ'
+    KEYCODE_FULLWIDTH_y = 0xFF59, // full width 'ｙ'
+    KEYCODE_FULLWIDTH_z = 0xFF5A, // full width 'ｚ'
+    // 数字
+    KEYCODE_FULLWIDTH_0 = 0xFF10, // full width '０'
+    KEYCODE_FULLWIDTH_1 = 0xFF11, // full width '１'
+    KEYCODE_FULLWIDTH_2 = 0xFF12, // full width '２'
+    KEYCODE_FULLWIDTH_3 = 0xFF13, // full width '３'
+    KEYCODE_FULLWIDTH_4 = 0xFF14, // full width '４'
+    KEYCODE_FULLWIDTH_5 = 0xFF15, // full width '５'
+    KEYCODE_FULLWIDTH_6 = 0xFF16, // full width '６'
+    KEYCODE_FULLWIDTH_7 = 0xFF17, // full width '７'
+    KEYCODE_FULLWIDTH_8 = 0xFF18, // full width '８'
+    KEYCODE_FULLWIDTH_9 = 0xFF19, // full width '９'
+    // 符号
+    KEYCODE_FULLWIDTH_EXCLAMATION = 0xFF01, // full width '！'
+    KEYCODE_FULLWIDTH_AT = 0xFF20, // full width '＠'
+    KEYCODE_FULLWIDTH_HASH = 0xFF03, // full width '＃'
+    KEYCODE_FULLWIDTH_DOLLAR = 0xFF04, // full width '＄'
+    KEYCODE_FULLWIDTH_PERCENT = 0xFF05, // full width '％'
+    KEYCODE_FULLWIDTH_CARET = 0xFF3E, // full width '＾'
+    KEYCODE_FULLWIDTH_AMPERSAND = 0xFF06, // full width '＆'
+    KEYCODE_FULLWIDTH_ASTERISK = 0xFF0A, // full width '＊'
+    KEYCODE_FULLWIDTH_LEFT_PAREN = 0xFF08, // full width '（'
+    KEYCODE_FULLWIDTH_RIGHT_PAREN = 0xFF09, // full width '）'
+    KEYCODE_FULLWIDTH_MINUS = 0xFF0D, // full width '－'
+    KEYCODE_FULLWIDTH_UNDERSCORE = 0xFF3F, // full width '＿'
+    KEYCODE_FULLWIDTH_EQUAL = 0xFF1D, // full width '＝'
+    KEYCODE_FULLWIDTH_PLUS = 0xFF0B, // full width '＋'
+    KEYCODE_FULLWIDTH_LEFT_BRACE = 0xFF5B, // full width '｛'
+    KEYCODE_FULLWIDTH_RIGHT_BRACE = 0xFF5D, // full width '｝'
+    KEYCODE_FULLWIDTH_LEFT_BRACKET = 0xFF3B, // full width '［'
+    KEYCODE_FULLWIDTH_RIGHT_BRACKET = 0xFF3D, // full width '］'
+    KEYCODE_FULLWIDTH_PIPE = 0xFF5C, // full width '｜'
+    KEYCODE_FULLWIDTH_BACKSLASH = 0xFF3C, // full width '＼'
+    KEYCODE_FULLWIDTH_COLON = 0xFF1A, // full width '：'
+    KEYCODE_FULLWIDTH_SEMICOLON = 0xFF1B, // full width '；'
+    KEYCODE_FULLWIDTH_QUOTE = 0xFF07, // full width '＇'
+    KEYCODE_FULLWIDTH_DOUBLE_QUOTE = 0xFF02, // full width '＂'
+    KEYCODE_FULLWIDTH_COMMA = 0xFF0C, // full width '，'
+    KEYCODE_FULLWIDTH_PERIOD = 0xFF0E, // full width '．'
+    KEYCODE_FULLWIDTH_SLASH = 0xFF0F, // full width '／'
+    KEYCODE_FULLWIDTH_QUESTION = 0xFF1F, // full width '？'
+    KEYCODE_FULLWIDTH_TILDE = 0xFF5E, // full width '～'
+    KEYCODE_FULLWIDTH_GRAVE = 0xFF40, // full width '｀'
+    KEYCODE_FULLWIDTH_LESS = 0xFF1C, // full width '＜'
+    KEYCODE_FULLWIDTH_GREATER = 0xFF1E, // full width '＞'
+
+    KEYCODE_FULLWIDTH_SPACE = 0x3000, // full width space '　'
+    KEYCODE_CHINESE_PERIOD = 0x3002, // Chinese period '。'
+
     KEYCODE_FLAG_LANGUAGE = 1 << 16,
     KEYCODE_LANGUAGE_CHINISE = KEYCODE_FLAG_LANGUAGE | KEYBOARD_LANG_CHS,
     KEYCODE_LANGUAGE_ENGLISH = KEYCODE_FLAG_LANGUAGE | KEYBOARD_LANG_ENG,
@@ -160,6 +262,11 @@ struct TextBox {
     u16 *text;
     int maxLength;
     int length;
+};
+
+struct KeycodeConvItem {
+    u16 keyCode;
+    u16 charCode;
 };
 
 struct VirtualKeyboard;
@@ -212,6 +319,34 @@ int HandleKeyboardInput();
 void TryAddCharToInput(u16 charCode);
 void TryAddKeycodeToInput(KeyCode keyCode);
 void RegisterKeyboardInputMethod(int lang, KeyboardInputMethodInterface *inputMethodInterface);
+
+static inline u16 HalfToFullWidth(u16 halfWidth) {
+    if (halfWidth >= 0x21 && halfWidth <= 0x7e) {
+        return halfWidth + 0xfee0;
+    }
+    if (halfWidth == 0x20) {
+        return 0x3000;
+    }
+    return 0x0000;
+}
+
+static inline int FindCustomCharCode(const struct KeycodeConvItem *table, int tableSize, u16 keyCode) {
+    int left = 0;
+    int right = tableSize - 1;
+    while (left <= right) {
+        int mid = (left + right) / 2;
+        if (table[mid].keyCode == keyCode) {
+            return table[mid].charCode;
+        }
+        else if (table[mid].keyCode < keyCode) {
+            left = mid + 1;
+        }
+        else {
+            right = mid - 1;
+        }
+    }
+    return -1;
+}
 
 void InitPinyinInputMethod();
 void DeinitPinyinInputMethod();

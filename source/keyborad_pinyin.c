@@ -138,7 +138,7 @@ static bool OnKeyPressed(struct VirtualKeyboard *keyboard, struct Key *key) {
         if (gPinyinInputMethod->inputLetterNum > 0) {
             for (int i = 0; i < gPinyinInputMethod->inputLetterNum; i++)
             {
-                TryAddKeycodeToInput(gPinyinInputMethod->inputLetter[i]);
+                TryAddKeycodeToInput(HalfToFullWidth(gPinyinInputMethod->inputLetter[i]));
             }
             gPinyinInputMethod->inputLetterNum = 0;
             gPinyinInputMethod->candidateNum = 0;
@@ -168,6 +168,15 @@ static bool OnKeyPressed(struct VirtualKeyboard *keyboard, struct Key *key) {
         TryAddCharToInput(gPinyinInputMethod->candidate[index + gPinyinInputMethod->candidateOffset]);
         gPinyinInputMethod->inputLetterNum = 0;
         gPinyinInputMethod->candidateNum = 0;
+        return true;
+    }
+
+    if (key->code >= KEYCODE_SPACE && key->code <= KEYCODE_TILDE) {
+        if (key->code == KEYCODE_PERIOD) {
+            TryAddKeycodeToInput(KEYCODE_CHINESE_PERIOD);
+        } else {
+            TryAddKeycodeToInput(HalfToFullWidth(key->code));
+        }
         return true;
     }
     return false;

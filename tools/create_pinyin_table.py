@@ -1,6 +1,6 @@
-import re
 import struct
 import sys
+from common import read_encoding_table_reverse
 
 def read_pinyin_table(filename):
     pinyin_table = {}
@@ -16,22 +16,6 @@ def read_pinyin_table(filename):
             characters = characters.replace(' ', '')
             pinyin_table[pinyin] = characters
     return pinyin_table
-
-def read_encoding_table(filename):
-    encoding_table = {}
-    with open(filename, 'r', encoding='utf-8') as file:
-        pattern = re.compile(r'([0-9A-Fa-f]{2,4})=(.)')
-        for line in file:
-            if not line:
-                continue
-            match = pattern.match(line)
-            if match:
-                code = int(match.group(1), 16)
-                character = match.group(2)
-                encoding_table[character] = code
-            else:
-                print(f'Invalid line: {line}')
-    return encoding_table
 
 def filter_pinyin_table(pinyin_table, encoding_table):
     filtered_pinyin_table = {}
@@ -114,7 +98,7 @@ def create_binary_pinyin_table(filtered_pinyin_table, output_filename, encoding_
 
 def main(encoding_file):
     pinyin_table = read_pinyin_table('pinyin.txt')
-    encoding_table = read_encoding_table(encoding_file)
+    encoding_table = read_encoding_table_reverse(encoding_file)
     filtered_pinyin_table = filter_pinyin_table(pinyin_table, encoding_table)
     create_binary_pinyin_table(filtered_pinyin_table, 'pinyin_table.bin', encoding_table)
 

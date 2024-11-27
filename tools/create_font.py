@@ -1,23 +1,7 @@
 import freetype
-import re
 import sys
 import struct
-
-def extract_code_table(file_path):
-    # 使用正则表达式匹配键值对，支持2字节或4字节的16进制值
-    pattern = re.compile(r'([0-9A-Fa-f]{2,4})=(.)')
-    with open(file_path, 'r', encoding='utf-8') as file:
-        text = file.read()
-    
-    matches = pattern.findall(text)
-    
-    code_table = {}
-    for match in matches:
-        custom_code = int(match[0], 16)
-        character = match[1]
-        code_table[custom_code] = character
-    
-    return code_table
+from common import read_encoding_table
 
 def create_glyphs(font_path, size, code_table):
     face = freetype.Face(font_path)
@@ -73,7 +57,7 @@ def main(code_table_path, font_path):
     output_file = 'font.bin'
     font_size = 12
     
-    code_table = extract_code_table(code_table_path)
+    code_table = read_encoding_table(code_table_path)
     characters = create_glyphs(font_path, font_size, code_table)
     
     unique_characters = {}

@@ -1,8 +1,9 @@
 .vscode
 rom
 build
-*.bin
-*.elf
+/*.bin
+/*.elf
 backup_files
 config
 symbol.sym
+__pycache__
