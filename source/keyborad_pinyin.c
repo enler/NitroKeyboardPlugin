@@ -240,6 +240,12 @@ static bool OnInputStringDraw(struct VirtualKeyboard *keyboard, struct TextBox *
 
     x = inputStringWidth;
 
+    glLine(x + textBox->x,
+           textBox->y + keyboard->glyphBaseline,
+           x + inputLettersWidth + textBox->x - 1,
+           textBox->y + keyboard->glyphBaseline,
+           RGB15(0, 31, 0));
+
     for (int i = 0; i < gPinyinInputMethod->inputLetterNum; i++) {
         glImage *defaultGlyph = GetDefaultGlyph(gPinyinInputMethod->inputLetter[i]);
         if (defaultGlyph) {

@@ -7,12 +7,13 @@ SECTIONS
 {
     .text : {
         *source/*.o(.text*)
+        *libc.a:libc_a-memcmp.o(.text.memcmp)
         *libc.a:libc_a-memcpy-stub.o(.text.memcpy)
         *libc.a:libc_a-memset.o(.text.memset)
-        *libc.a:libc_a-memcmp.o(.text.memcmp)
         *libgcc.a:_divsi3.o(.text)
         *libgcc.a:_dvmd_tls.o(.text)
         *libnds9.a:biosCalls.o(.text.swiCopy)
+        *libnds9.a:biosCalls.o(.text.swiDelay)
         *libnds9.a:dynamicArray.o(.text.DynamicArrayGet)
         *libnds9.a:dynamicArray.o(.text.DynamicArrayInit)
         *libnds9.a:dynamicArray.o(.text.DynamicArraySet)
@@ -20,6 +21,7 @@ SECTIONS
         *libnds9.a:gl2d.o(.text.glBegin2D)
         *libnds9.a:gl2d.o(.text.glBoxFilled)
         *libnds9.a:gl2d.o(.text.glEnd2D)
+        *libnds9.a:gl2d.o(.text.glLine)
         *libnds9.a:gl2d.o(.text.glLoadTileSet)
         *libnds9.a:gl2d.o(.text.glLoadSpriteSet)
         *libnds9.a:gl2d.o(.text.glSprite)
@@ -45,7 +47,6 @@ SECTIONS
         *libnds9.a:videoGL.o(.text.vramBlock_terminate)
         *libnds9.a:videoGL.o(.text.glAssignColorTable)
         *libnds9.a:videoGL.o(.text.glGetTexturePointer)
-        *libnds9.a:biosCalls.o(.text.swiDelay)
     }
     . = ALIGN(4);
 
