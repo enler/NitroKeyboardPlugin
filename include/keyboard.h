@@ -310,6 +310,8 @@ typedef struct VirtualKeyboard {
     KeyboardInputMethodInterface *inputMethodInterface[KEYBOARD_LANG_MAX];
 };
 
+void StartKeyboardMonitorThread();
+
 void InitHeap(void *start, u32 size);
 
 void InitializeKeyboard(const KeyboardGameInterface *gameInterface);

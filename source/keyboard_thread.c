@@ -2,6 +2,7 @@
 #include <nds/arm9/background.h>
 #include <nds/arm9/video.h>
 #include <nds/arm9/videoGL.h>
+#include <nds/bios.h>
 #include <nds/interrupts.h>
 #include <nds/system.h>
 #include "keyboard.h"
@@ -37,22 +38,8 @@ bool GetBranchLinkAddr(u32 lr, u32 *addr) {
             // Check for Thumb BLX
             if ((instr1 & 0xF800) == 0xF000 && (instr2 & 0xF800) == 0xE800) {
                 // Extract immediate value and compute target address
-                u32 S = (instr1 & 0x0400) >> 10;
-                u32 imm10 = (instr1 & 0x03FF);
-                u32 J1 = (instr2 & 0x2000) >> 13;
-                u32 J2 = (instr2 & 0x0800) >> 11;
-                u32 imm11 = (instr2 & 0x07FF);
-                
-                // Reconstruct signed immediate
-                u32 I1 = ~(J1 ^ S) & 1;
-                u32 I2 = ~(J2 ^ S) & 1;
-                u32 imm32 = (S << 24) | (I1 << 23) | (I2 << 22) | (imm10 << 12) | (imm11 << 1);
-                // Sign extend
-                if (S) {
-                    imm32 |= 0xFE000000;
-                }
-                
-                *addr = (lr + 4) + imm32;
+                s32 offset = (s32)(((instr1 & 0x7FF) << 12) | ((instr2 & 0x7FF) << 1)) << 9 >> 9;
+                *addr = ((lr + 4) + offset) & ~3;
                 return true;
             }
         }
@@ -62,12 +49,8 @@ bool GetBranchLinkAddr(u32 lr, u32 *addr) {
             
             // Check for ARM BL
             if ((instr & 0x0F000000) == 0x0B000000) {
-                u32 offset = instr & 0x00FFFFFF;
-                // Sign extend 24-bit offset
-                if (offset & 0x00800000) {
-                    offset |= 0xFF000000;
-                }
-                *addr = (lr + 8) + (offset << 2);
+                s32 offset = (s32)(instr & 0x00FFFFFF) << 8 >> 6;
+                *addr = (lr + 8) + offset;
                 return true;
             }
         }

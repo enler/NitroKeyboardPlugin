@@ -1,12 +1,14 @@
 #include <nds/arm9/videoGL.h>
+
+s_vramBlock *vramBlock_Construct(uint8 *start, uint8 *end);
+void vramBlock_terminate(s_vramBlock *mb);
+
 //---------------------------------------------------------------------------------
-void __wrap_glInit_C(void) {
+void __wrap_glInit(void) {
 //---------------------------------------------------------------------------------
 	int i;
 
 //	powerOn(POWER_3D_CORE | POWER_MATRIX);	// enable 3D core & geometry engine
-
-	glGlob = glGetGlobals();
 
 	if( glGlob->isActive )
 		return;
@@ -20,7 +22,7 @@ void __wrap_glInit_C(void) {
 
 	// init texture globals
 
-	glGlob->clearColor = 0;
+	glCurClearColor = 0;
 
 	glGlob->activeTexture = 0;
 	glGlob->activePalette = 0;

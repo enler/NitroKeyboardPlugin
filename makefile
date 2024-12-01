@@ -27,12 +27,11 @@ CC1     := $(shell $(CC) --print-prog-name=cc1) -quiet
 CPP     := $(PREFIX)cpp
 AR      := $(PREFIX)ar
 
-LIBNDS  := $(DEVKITPRO)/libnds/lib
-LIBPATH := -L "$(dir $(shell $(CC) -print-file-name=libgcc.a))" -L "$(dir $(shell $(CC) -print-file-name=libnosys.a))" -L "$(dir $(shell $(CC) -print-file-name=libc.a))"
-LIBS	:= $(LIBPATH) -lc -lgcc
+LIBPATH := -L $(DEVKITARM)/../libnds/lib -L $(DEVKITARM)/../calico/lib -L "$(dir $(shell $(CC) -print-file-name=libgcc.a))" -L "$(dir $(shell $(CC) -print-file-name=libnosys.a))" -L "$(dir $(shell $(CC) -print-file-name=libc.a))"
+LIBS	:= $(LIBPATH) -lnds9 -lcalico_ds9 -lc -lgcc
 
 OBJ_DIR  := build
-INC_DIRS := include nitro $(DEVKITARM)/include $(DEVKITARM)/../libnds/include
+INC_DIRS := include nitro $(DEVKITARM)/../calico/include $(DEVKITARM)/include $(DEVKITARM)/../libnds/include
 
 C_SRCS  := $(wildcard source/*.c)
 ASM_SRCS:= $(wildcard source/*.S)
@@ -50,8 +49,8 @@ DEPS   := $(ALL_OBJS:%.o=%.d)
 
 OVERLAY_SIZE_SYM_FILE := $(OBJ_DIR)/overlay_size.sym
 
-CFLAGS	:= -g -w -Os -std=gnu99 -Os -ffreestanding -mabi=aapcs -march=armv5te -mthumb -mtune=arm946e-s -mthumb-interwork $(foreach dir,$(INC_DIRS),-I $(dir)) -DARM9=1
-LDFLAGS := -nostartfiles -nodefaultlibs -Wl,--use-blx  -Wl,--wrap=glInit_C,--wrap=glResetTextures -T symbol.sym
+CFLAGS	:= -g -w -Os -std=gnu99 -Os -ffreestanding -mabi=aapcs -march=armv5te -mthumb -mtune=arm946e-s -mthumb-interwork $(foreach dir,$(INC_DIRS),-I $(dir)) -DARM9=1 -D__NDS__
+LDFLAGS := -nostartfiles -nodefaultlibs -Wl,--use-blx  -Wl,--wrap=glInit,--wrap=glResetTextures -T symbol.sym
 
 $(OUTPUT_ELF) : LDFLAGS += -Ttext=$(OVERLAY_ADDR) -T linker.ld
 $(LOADER_ELF) : CFLAGS += -DOVERLAY_ID=$(OVERLAY_ID)
@@ -88,7 +87,7 @@ $(LOADER_ELF): $(OVERLAY_LDR_OBJS) $(OUTPUT_BIN)
 	$(LD) $(LDFLAGS) -Ttext=$(OVERLAY_LDR_ADDR) -T overlay_ldr.ld -T $(OVERLAY_SIZE_SYM_FILE) -o $@ $(OVERLAY_LDR_OBJS)
 
 $(OUTPUT_ELF): $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $^ $(LIBNDS)/libnds9.a $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 	$(OBJDUMP) -t $@ | grep 'text' | grep 'g' | awk '{print $$1"\t"$$NF}' > rom/build.txt 
 
 $(OUTPUT_BIN): $(OUTPUT_ELF)
