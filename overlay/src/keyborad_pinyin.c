@@ -1,6 +1,6 @@
 #include <nds/ndstypes.h>
 #include <stdlib.h>
-#include "fs.h"
+#include "nitro/fs.h"
 #include "keyboard.h"
 
 #define MAX_INPUT_LETTER_NUM 6

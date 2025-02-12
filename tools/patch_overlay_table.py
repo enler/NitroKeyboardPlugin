@@ -13,6 +13,26 @@ class FSOverlayInfoHeader:
         self.file_id = 0
         self.compressed = 0
         self.flag = 0
+        
+def read_overlay_table(file_name):
+    overlay_table, size = load_file(file_name)
+    if not overlay_table or size != (size & ~0x1F):
+        return []
+
+    overlay_entry_size = struct.calcsize('IIIIIIII')
+    num_entries = size // overlay_entry_size
+    overlay_entries = []
+
+    for i in range(num_entries):
+        entry_data = overlay_table[i * overlay_entry_size:(i + 1) * overlay_entry_size]
+        overlay_entry = FSOverlayInfoHeader()
+        (overlay_entry.id, overlay_entry.ram_address, overlay_entry.ram_size, overlay_entry.bss_size, 
+         overlay_entry.sinit_init, overlay_entry.sinit_init_end, overlay_entry.file_id, flags) = struct.unpack('IIIIIIII', entry_data)
+        overlay_entry.compressed = (flags >> 8) & 0xFF
+        overlay_entry.flag = flags & 0xFF
+        overlay_entries.append(overlay_entry)
+
+    return overlay_entries
 
 def save_file(fname, fbuf):
     with open(fname, 'wb') as f:

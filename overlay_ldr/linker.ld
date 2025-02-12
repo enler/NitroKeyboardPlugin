@@ -6,22 +6,22 @@ ENTRY(_start)
 SECTIONS
 {
         .text : {
-            *overlay_ldr/*.o(.text*)
+            *src/*.o(.text*)
         }
         . = ALIGN(4);
 
         .rodata : { 
-            *overlay_ldr/*.o(.rodata*)
+            *src/*.o(.rodata*)
         }
         . = ALIGN(4);
 
         .data : { 
-            *overlay_ldr/*.o(.data*)
+            *src/*.o(.data*)
         }
         . = ALIGN(4);
         
         .bss : { 
-            *overlay_ldr/*.o(.bss*)
+            *src/*.o(.bss*)
         }
 
 

@@ -1,6 +1,6 @@
 #include <nds.h>
+#include "nitro/fs.h"
 #include "keyboard.h"
-#include "fs.h"
 #include "touch.h"
 
 #define KEYBOARD_BG_COLOR RGB15(30 >> 3, 144 >> 3, 255 >> 3)

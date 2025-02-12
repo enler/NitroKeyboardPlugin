@@ -1,5 +1,5 @@
 #include <nds/ndstypes.h>
-#include "fs.h"
+#include "nitro/fs.h"
 #include "keyboard.h"
 
 #define EXTERNAL_GLYPH_WIDTH 16

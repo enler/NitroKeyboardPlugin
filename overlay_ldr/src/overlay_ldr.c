@@ -1,5 +1,5 @@
 #include <nds/ndstypes.h>
-#include "fs.h"
+#include "nitro/fs.h"
 
 #ifndef OVERLAY_ID
 #define OVERLAY_ID -1

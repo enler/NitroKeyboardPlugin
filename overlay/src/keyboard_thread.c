@@ -5,8 +5,8 @@
 #include <nds/bios.h>
 #include <nds/interrupts.h>
 #include <nds/system.h>
+#include "nitro/thread.h"
 #include "keyboard.h"
-#include "thread.h"
 #include "touch.h"
 
 static vu32 userExit = 0;

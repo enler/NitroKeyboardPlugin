@@ -6,7 +6,8 @@ ENTRY(_start)
 SECTIONS
 {
     .text : {
-        *source/*.o(.text*)
+        *src/*.o(.text*)
+        *nitro.a:*.o(.text)
         *libc.a:libc_a-memcmp.o(.text.memcmp)
         *libc.a:libc_a-memcpy-stub.o(.text.memcpy)
         *libc.a:libc_a-memset.o(.text.memset)
@@ -53,25 +54,25 @@ SECTIONS
     . = ALIGN(4);
 
     .rodata : { 
-        *source/*.o(.rodata*)
+        *src/*.o(.rodata*)
         *libnds9.a:videoGL.o(.rodata)
     }
     . = ALIGN(4);
 
     .data : { 
-        *source/*.o(.data)
+        *src/*.o(.data)
         *libnds9.a:videoGL.o(.data.glGlob)
     }
     . = ALIGN(4);
 
     __init_functions_begin__ = .;
-    .init_functions : {*source/misc.o(.init_functions)}
+    .init_functions : {*src/misc.o(.init_functions)}
     __init_functions_end__ = .;
     . = ALIGN(4);
     __ram_size__ = . - ADDR(.text);
     
     .bss : { 
-        *source/*.o(.bss*)
+        *src/*.o(.bss*)
         *libnds9.a:gl2d.o(.bss.gCurrentTexture)
         *libnds9.a:gl2d.o(.bss.g_depth)
         *libnds9.a:videoGL.o(.bss.diffuse_ambient.1)
