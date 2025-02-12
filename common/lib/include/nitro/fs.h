@@ -2,6 +2,7 @@
 #define NITRO_FS_H
 
 #include <nds/ndstypes.h>
+#include "nitro/sdk_ver.h"
 
 typedef struct _FSFile {
     u8 _[0x3c];
@@ -15,7 +16,19 @@ bool FS_LoadOverlay(u32 target, u32 id);
 void FS_Init(u32 default_dma_no );
 void FS_InitFile(FSFile *p_file);
 bool FS_OpenFile(FSFile *p_file, const char *path);
+
+#if NITROSDK_VER >= MAKE_NITROSDK_VER(5, 0)
 u32 FS_GetLength(const FSFile *p_file);
+#elif NITROSDK_VER >= MAKE_NITROSDK_VER(3, 0)
+static inline u32 FS_GetLength(const FSFile *p_file) {
+    return *(u32 *)((u8*)p_file + 0x28) - *(u32 *)((u8*)p_file + 0x24);
+}
+#else
+static inline u32 FS_GetLength(const FSFile *p_file) {
+    return *(u32 *)((u8*)p_file + 0x24) - *(u32 *)((u8*)p_file + 0x20);
+}
+#endif
+
 s32 FS_ReadFile(FSFile *p_file, void *dst, s32 len);
 bool FS_CloseFile(FSFile *p_file);
 bool FS_SeekFile( FSFile *p_file, s32 offset, s32 origin );

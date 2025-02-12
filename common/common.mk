@@ -32,7 +32,7 @@ COMMON_INC_DIRS:= $(COMMON_DIR)/lib/include $(COMMON_DIR)/include $(DEVKITARM)/.
 NITRO_LIB_SRCS := $(wildcard $(COMMON_DIR)/lib/src/nitro/*.c)
 NITRO_LIB_OBJS := $(patsubst $(COMMON_DIR)/lib/%, $(OBJ_DIR)/lib/%, $(NITRO_LIB_SRCS:.c=.o))
 
-NITRO_LIB_C_FLAGS := -Os -mabi=aapcs -march=armv5te -mtune=arm946e-s -DARM9=1 -D__NDS__
+NITRO_LIB_C_FLAGS := -Os -mabi=aapcs -march=armv5te -mtune=arm946e-s -DARM9=1 -D__NDS__ -DNITROSDK_VER=$(NITROSDK_VER)
 ifeq ($(IS_NITROSDK_THUMB), 1)
 NITRO_LIB_C_FLAGS += -mthumb -mthumb-interwork
 else

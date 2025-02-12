@@ -1,12 +1,13 @@
 // this file only used for linking nitrosdk compiled as thumb instructions
 #include <nds/ndstypes.h>
+#include "nitro/sdk_ver.h"
 #include "nitro/fs.h"
 
 #define IMPORT __attribute__((naked))
 
-u32 FS_GetLength(const FSFile *p_file) {
-    return *(u32 *)((u8*)p_file + 0x28) - *(u32 *)((u8*)p_file + 0x24);
-}
+#if NITROSDK_VER >= MAKE_NITROSDK_VER(5, 0)
+IMPORT u32 FS_GetLength(const FSFile *p_file) {}
+#endif
 
 IMPORT bool FS_LoadOverlay(u32 target, u32 id) {}
 
