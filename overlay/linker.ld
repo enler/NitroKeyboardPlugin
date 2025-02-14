@@ -80,6 +80,7 @@ SECTIONS
         *libnds9.a:videoGL.o(.bss.specular_emission.0)
         *libnds9.a:videoGL_base.o(.bss.glCurClearColor)
     }
+    . = ALIGN(4);
     __bss_size__ = . - ADDR(.bss);
     __size__ = . - ADDR(.text);
 

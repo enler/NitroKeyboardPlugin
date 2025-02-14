@@ -2,7 +2,7 @@
 
 include ../common/common.mk
 
-OUTPUT     := $(shell printf "overlay_%04d" $(OVERLAY_ID))
+OUTPUT     := $(OVERLAY_NAME)
 OUTPUT_ELF := ../$(OUTPUT).elf
 OUTPUT_BIN := ../$(OUTPUT).bin
 

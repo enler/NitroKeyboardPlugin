@@ -7,3 +7,4 @@ all:
 clean:
 	make -C overlay clean
 	make -C overlay_ldr clean
+	rm *.bin
