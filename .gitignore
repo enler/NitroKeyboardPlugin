@@ -2,8 +2,7 @@
 rom
 build
 /*.bin
-/*.elf
-backup_files
-config
-symbol.sym
+*.elf
+common/config.mk
+common/symbols.ld
 __pycache__
