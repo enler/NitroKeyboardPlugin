@@ -1,3 +1,4 @@
+import os
 import struct
 import sys
 from common import read_encoding_table_reverse
@@ -97,7 +98,8 @@ def create_binary_pinyin_table(filtered_pinyin_table, output_filename, encoding_
             f.write(struct.pack('<H', code))
 
 def main(encoding_file):
-    pinyin_table = read_pinyin_table('pinyin.txt')
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    pinyin_table = read_pinyin_table(os.path.join(script_dir, 'pinyin.txt'))
     encoding_table = read_encoding_table_reverse(encoding_file)
     filtered_pinyin_table = filter_pinyin_table(pinyin_table, encoding_table)
     create_binary_pinyin_table(filtered_pinyin_table, 'pinyin_table.bin', encoding_table)

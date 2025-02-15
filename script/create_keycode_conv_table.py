@@ -46,7 +46,7 @@ def main():
 
     # 计算keyboard.h的路径
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    keyboard_h_path = os.path.join(script_dir, '../include/keyboard.h')
+    keyboard_h_path = os.path.join(script_dir, '../overlay/include/keyboard.h')
     keycode_dict = parse_keycodes(keyboard_h_path)
     filtered_keycode_dict = filter_keycodes(keycode_dict)
     
