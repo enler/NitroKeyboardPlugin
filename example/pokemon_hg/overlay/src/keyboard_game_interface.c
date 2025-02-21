@@ -11,6 +11,9 @@
 IMPORT void DrawTextToWindow(u8 *, u16 *, u32, u32, u32, u32, u32, u32) {}
 IMPORT void FillTextWindow(u8 *, u8) {}
 IMPORT void MoveCharCursor(u8 *, u16, u16) {}
+IMPORT int OnHandleNamingEvent(u32, u32) {}
+IMPORT int DeinitNamingContext(u32, u32) {}
+
 
 extern u8 *HW_ARENA_INFO_BUF[];
 
@@ -96,14 +99,12 @@ void InitBppConvTable() {
 }
 
 static int Hook_OnHandleNamingEvent(u32 a1, u32 a2) {
-    int (*OnHandleNamingEvent)(u32, u32) = (int (*)(u32, u32))0x208256D;
     int result = OnHandleNamingEvent(a1, a2);
     gInternalContext.namingContextAlt = *(void**)(a1 + 0x1C);
     return result;
 }
 
 static int Hook_DeinitNamingContext(u32 a1, u32 a2){
-    int (*DeinitNamingContext)(u32, u32) = (int (*)(u32, u32))0x2082931;
     int result = DeinitNamingContext(a1, a2);
     gInternalContext.namingContextAlt = NULL;
     return result;
@@ -118,11 +119,6 @@ static void InitInternalContext() {
         FS_SeekFile(&gInternalContext.fontFile, 0x84, 0);
         FS_ReadFile(&gInternalContext.fontFile, &gInternalContext.header, sizeof(PMFontHeader));
     }
-    // InitBppConvTable();
-    // if (FS_OpenFile(&gInternalContext.fontFile, "keyboard/font.bin"))
-    // {
-    //     FS_ReadFile(&gInternalContext.fontFile, &gInternalContext.glyphNum, sizeof(u32));
-    // }
     *(void**)0x2101D94 = Hook_OnHandleNamingEvent;
     *(void**)0x2101D98 = Hook_DeinitNamingContext;
     initialized = true;
@@ -154,7 +150,7 @@ static int GetMaxInputLength() {
     return 5;
 }
 
-u32 reverse_2bit_units(u32 pixelData) {
+u32 Reverse2bitUnits(u32 pixelData) {
     u32 result = 0;
     for (int i = 0; i < 16; ++i) {
         u8 two_bits = (pixelData >> (i * 2)) & 0x3;
@@ -173,7 +169,7 @@ static bool GetGlyph(u16 charCode, u8 *output, int *advance) {
         for (int j = 0; j < 8; j++) {
             u32 pixelData = (glyphData[i * 16 + j] << 16) | glyphData[i * 16 + j + 8];
             pixelData = (pixelData & 0x55555555) & ((pixelData >> 1) ^ pixelData);
-            pixelData = reverse_2bit_units(pixelData);
+            pixelData = Reverse2bitUnits(pixelData);
             memcpy(output, &pixelData, sizeof(u32));
             output += 4;
         }
@@ -188,45 +184,6 @@ static bool GetGlyph(u16 charCode, u8 *output, int *advance) {
     }
     
     return true;
-}
-
-static bool GetGlyphFromCustomFont(u16 charCode, u8 *output, int *advance) {
-    memset(output, 0, 64);
-    // binary search in font file
-    int left = 0;
-    int right = gInternalContext.glyphNum - 1;
-    while (left <= right) {
-        int mid = (left + right) / 2;
-        CustomGlyphEntry entry;
-        FS_SeekFile(&gInternalContext.fontFile, 4 + mid * sizeof(CustomGlyphEntry), 0);
-        FS_ReadFile(&gInternalContext.fontFile, &entry, sizeof(CustomGlyphEntry));
-        if (entry.charCode == charCode) {
-            for (int i = 0; i < 12; i++) {
-                u16 line = 0;
-                int index = i / 2 * 3;
-                if ((i & 1) == 0)
-                    line = entry.data[index] | (entry.data[index + 1] << 8 & 0xF00);
-                else 
-                    line = entry.data[index + 1] >> 4 | (entry.data[index + 2] << 4);
-                u16 lineLeft = gBppConvTable[line & 0xFF];
-                u16 lineRight = gBppConvTable[line >> 8];
-                index = (i + 2) * 4;
-                output[index] = lineLeft & 0xFF;
-                output[index + 1] = lineLeft >> 8;
-                output[index + 2] = lineRight & 0xFF;
-                output[index + 3] = lineRight >> 8;
-            }
-            *advance = entry.width;
-            return true;
-        }
-        else if (entry.charCode < charCode) {
-            left = mid + 1;
-        }
-        else {
-            right = mid - 1;
-        }
-    }
-    return false;
 }
 
 static bool KeycodeToChar(u16 keycode, u16 *output) {
