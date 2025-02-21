@@ -99,6 +99,7 @@ static void InitInternalContext() {
     if (initialized)
         return;
     InitBppConvTable();
+
     if (FS_OpenFile(&gInternalContext.fontFile, "keyboard/font.bin"))
     {
         FS_ReadFile(&gInternalContext.fontFile, &gInternalContext.glyphNum, sizeof(u32));
@@ -128,15 +129,6 @@ static int GetMaxInputLength() {
         return *((int*)gInternalContext.tpHandwritingContextAlt + 42);
     else
         return 0;
-}
-
-u32 reverse_2bit_units(u32 pixelData) {
-    u32 result = 0;
-    for (int i = 0; i < 16; ++i) {
-        u8 two_bits = (pixelData >> (i * 2)) & 0x3;
-        result |= (two_bits << ((15 - i) * 2));
-    }
-    return result;
 }
 
 static bool GetGlyphFromCustomFont(u16 charCode, u8 *output, int *advance) {

@@ -6,8 +6,8 @@
 #endif
 
 void LoadOverlay() {
-    static bool loaded = false;
-    if (loaded) return;
+    static int counter;
+    if (!counter++)
+        return;
     FS_LoadOverlay(0, OVERLAY_ID);
-    loaded = true;
 }
