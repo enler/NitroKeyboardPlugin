@@ -291,7 +291,7 @@ typedef struct {
 
 typedef struct VirtualKeyboard {
     struct Key normalKeys[46];
-    struct Key functionKeys[6];
+    struct Key functionKeys[5];
     struct Key *currentKey;    
     int x;
     int y;

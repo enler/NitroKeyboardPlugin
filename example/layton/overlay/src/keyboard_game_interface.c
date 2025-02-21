@@ -91,7 +91,7 @@ u32 Hook_HandleTPHandwriting(void *arg) {
 
 static void InitInternalContext() {
     static bool initialized = false;
-    static HookDataEntry handleTPHandwritingHookData = {
+    static HookARMEntry handleTPHandwritingHookData = {
         .functionAddr = (void*)0x020413D4,
         .hookFunction = Hook_HandleTPHandwriting,
         .origFunctionRef = (void**)&Orig_HandleTPHandwriting

@@ -46,6 +46,9 @@ KeyboardInputMethodInterface * GetPinyinInputMethodInterface() {
 
 void InitPinyinInputMethod() {
     gPinyinInputMethod = malloc(sizeof(PinyinInputMethod));
+    if (!gPinyinInputMethod) {
+        return;
+    }
     memset(gPinyinInputMethod, 0, sizeof(PinyinInputMethod));
     gPinyinInputMethod->interface.OnKeyPressed = OnKeyPressed;
     gPinyinInputMethod->interface.OnKeyDraw = OnKeyDraw;
@@ -57,6 +60,10 @@ void InitPinyinInputMethod() {
         FS_SeekFile(&gPinyinInputMethod->file, sizeof(PinyinTableHeader), 0);
         FS_ReadFile(&gPinyinInputMethod->file, gPinyinInputMethod->entries, sizeof(PinyinTableEntry) * gPinyinInputMethod->header.pinyinNum);
         gPinyinInputMethod->candidate = malloc(sizeof(u16) * gPinyinInputMethod->header.maxCandidateNum);
+    }
+    else {
+        free(gPinyinInputMethod);
+        gPinyinInputMethod = NULL;
     }
 }
 
@@ -70,6 +77,7 @@ void DeinitPinyinInputMethod() {
             free(gPinyinInputMethod->candidate);
         }
         free(gPinyinInputMethod);
+        gPinyinInputMethod = NULL;
     }
 }
 

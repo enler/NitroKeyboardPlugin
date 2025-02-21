@@ -3,7 +3,7 @@
 
 #include <nds/ndstypes.h>
 
-typedef struct _CPContext {
+typedef struct {
     u64     div_numer;
     u64     div_denom;
     u64     sqrt;
@@ -12,7 +12,7 @@ typedef struct _CPContext {
 }
 CPContext;
 
-typedef struct OSContext
+typedef struct
 {
     u32     cpsr;
     u32     r[13];
@@ -24,14 +24,16 @@ typedef struct OSContext
 }
 OSContext;
 
-typedef struct _OSThread {
+typedef struct {
     OSContext context;
     u8 _[512 - sizeof(OSContext)];
-} OSThread;
+} 
+OSThread;
 
 void OS_CreateThread(OSThread *thread, void (*func) (void *), void *arg, void *stack, u32 stackSize, u32 prio);
 void OS_WakeupThreadDirect(OSThread *thread);
 void OS_ExitThread(void);
+void OS_SleepThread(void *queue);
 void OS_Sleep(u32 millisecond);
 
 #endif

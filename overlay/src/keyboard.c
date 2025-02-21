@@ -88,7 +88,7 @@ void InitializeKeyboard(const KeyboardGameInterface *gameInterface) {
         {KEY_BUTTON_WIDTH + KEY_BUTTON_SPACING, 4 * (KEY_BUTTON_HEIGHT + KEY_BUTTON_SPACING), KEY_BUTTON_WIDTH, KEY_BUTTON_HEIGHT, KEYCODE_LANGUAGE_CHINISE}
     };
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->functionKeys); i++) {
         gVirtualKeyboard->functionKeys[i] = functionKeys[i];
     }
 
@@ -200,12 +200,12 @@ void DrawKey(struct Key *key) {
 void DrawKeyboard() {
     glBoxFilled(0, 0, 256, 192, KEYBOARD_BG_COLOR);
     SetDefaultKeysPalette(gVirtualKeyboard->keyTexPalId);
-    for (int i = 0; i < sizeof(gVirtualKeyboard->normalKeys) / sizeof(gVirtualKeyboard->normalKeys[0]); i++) {
+    for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->normalKeys); i++) {
         struct Key key = gVirtualKeyboard->normalKeys[i];
         DrawKey(&key);
     }
 
-    for (int i = 0; i < sizeof(gVirtualKeyboard->functionKeys) / sizeof(gVirtualKeyboard->functionKeys[0]); i++) {
+    for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->functionKeys); i++) {
         struct Key key = gVirtualKeyboard->functionKeys[i];
         DrawKey(&key);
     }
@@ -213,7 +213,7 @@ void DrawKeyboard() {
 }
 
 void SwitchKeyboardLayer(u8 * keyboardMap) {
-    for (int i = 0; i < sizeof(gVirtualKeyboard->normalKeys) / sizeof(gVirtualKeyboard->normalKeys[0]); i++) {
+    for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->normalKeys); i++) {
         gVirtualKeyboard->normalKeys[i].code = keyboardMap[i];
         gVirtualKeyboard->normalKeys[i].glyph = GetDefaultGlyph(keyboardMap[i]);
     }
@@ -338,11 +338,11 @@ int ProcessKeyTouch(int x, int y) {
 }
 
 void ClearKeyboardState() {
-    for (int i = 0; i < sizeof(gVirtualKeyboard->normalKeys) / sizeof(gVirtualKeyboard->normalKeys[0]); i++) {
+    for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->normalKeys); i++) {
         gVirtualKeyboard->normalKeys[i].isPressed = false;
         gVirtualKeyboard->normalKeys[i].isHeld = false;
     }
-    for (int i = 0; i < sizeof(gVirtualKeyboard->functionKeys) / sizeof(gVirtualKeyboard->functionKeys[0]); i++) {
+    for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->functionKeys); i++) {
         gVirtualKeyboard->functionKeys[i].isPressed = false;
         gVirtualKeyboard->functionKeys[i].isHeld = false;
     }

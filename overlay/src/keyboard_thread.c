@@ -5,30 +5,42 @@
 #include <nds/bios.h>
 #include <nds/interrupts.h>
 #include <nds/system.h>
+#include <calico/arm/common.h>
+#include <nds/debug.h>
 #include "nitro/thread.h"
+#include "hook.h"
 #include "keyboard.h"
 #include "touch.h"
 
-static vu32 userExit = 0;
+static bool gKeyboardVisible;
 extern u32 OrigLauncherThreadLR;
 extern u32 OrigLauncherThreadPC;
 extern OSContext LanucherThreadContext;
+extern void *OSi_IrqThreadQueue[];
 
 void JumpFromLauncherThread();
+void *MpuGetDTCMRegion();
 
 void OS_SaveContext();
-void OS_WaitIrq(bool clear, u32 mask);
+__attribute__((weak)) extern void *SVC_WaitVBlankIntr;
+__attribute__((weak)) extern u32 SVC_WaitVBlankIntr_Caller;
+void Hook_SVC_WaitVBlankIntr();
 
 OSThread backboardThread;
-u8 stack[512];
+u32 stack[512 / sizeof(u32)];
 
 void WaitVBlankIntr() {
+    vu32 *irqCheckFlags = (vu32 *)MpuGetDTCMRegion() + 0x3FF8 / sizeof(u32);
     swiDelay(1);
-    OS_WaitIrq(true, IRQ_VBLANK);
+    ArmIrqState state = armIrqLockByPsr();
+    *irqCheckFlags &= ~IRQ_VBLANK;
+    armIrqUnlockByPsr(state);
+    while (!(*irqCheckFlags & IRQ_VBLANK))
+        OS_SleepThread(OSi_IrqThreadQueue);
 }
 
 bool GetBranchLinkAddr(u32 lr, u32 *addr) {
-    if (lr >= 0x2000000 && lr <= 0x23E0000) {
+    if (lr >= 0x1FF8000 && lr < 0x23E0000) {
         if (lr & 1) {  // Thumb mode
             lr &= ~1;
             lr -= 4;
@@ -36,10 +48,13 @@ bool GetBranchLinkAddr(u32 lr, u32 *addr) {
             u16 instr2 = *(u16 *)(lr + 2);
             
             // Check for Thumb BLX
-            if ((instr1 & 0xF800) == 0xF000 && (instr2 & 0xF800) == 0xE800) {
+            if ((instr1 & 0xF800) == 0xF000 && (instr2 & 0xE800) == 0xE800) {
                 // Extract immediate value and compute target address
                 s32 offset = (s32)(((instr1 & 0x7FF) << 12) | ((instr2 & 0x7FF) << 1)) << 9 >> 9;
-                *addr = ((lr + 4) + offset) & ~3;
+                *addr = (lr + 4) + offset;
+                if (!(instr2 & 0x1000)) {
+                    *addr &= ~3;
+                }
                 return true;
             }
         }
@@ -63,44 +78,51 @@ void MonitorThreadEntry(void* arg) {
     u32 state = 0;
     OSContext *context = &LanucherThreadContext;
     KeyboardGameInterface *interface = GetKeyboardGameInterface();
-    u32 addr;
-    void *heap;
-    for (;;)
-    {
-        switch(state) {
-            case 0:
-                if (interface->ShouldShowKeyboard())
-                    state++;
-                else
-                    OS_Sleep(1);
-                break;
-            case 1:
-                OrigLauncherThreadLR = context->lr;
-                if (GetBranchLinkAddr(OrigLauncherThreadLR, &addr)) {
-                    if (addr == OS_SaveContext)
-                        state++;
+    u32 addr, mode;
+    u32 caller = (u32)&SVC_WaitVBlankIntr_Caller;
+    void * SVC_WaitVBlankIntrPtr = &SVC_WaitVBlankIntr;
+    mode = 0;
+    if (caller && SVC_WaitVBlankIntrPtr) {
+        int ime = enterCriticalSection();
+        ForceMakingBranchLink((void*)(caller - 4), Hook_SVC_WaitVBlankIntr);
+        leaveCriticalSection(ime);
+        mode = 1;
+    }
+    for (;;) {
+        switch (state)
+        {
+        case 0:
+            if (interface->ShouldShowKeyboard())
+                state++;
+            else
+                OS_SleepThread(OSi_IrqThreadQueue);
+            break;
+        case 1:
+            int ime = enterCriticalSection();
+            if (mode == 1) {
+                gKeyboardVisible = true;
+                state++;
+            }
+            else {
+                if (context->lr >= 0x01FF8000 && context->lr < 0x023E0000) {
+                    if (GetBranchLinkAddr(context->lr, &addr)) {
+                        if (addr == (u32)OS_SaveContext) {
+                            gKeyboardVisible = true;
+                            OrigLauncherThreadLR = context->lr;
+                            OrigLauncherThreadPC = context->pc_plus4 - 4;
+                            context->lr = (u32)JumpFromLauncherThread;
+                            state++;
+                        }
+                    }
                 }
-                OS_Sleep(1);
-                break;
-            case 2:
-                if (heap = interface->Alloc(KEYBOARD_HEAP_SIZE)) {
-                    InitHeap(heap, KEYBOARD_HEAP_SIZE);
-                    userExit = 0;
-                    OrigLauncherThreadPC = context->pc_plus4 - 4;
-                    context->lr = (u32)JumpFromLauncherThread;
-                    state++;
-                }
-                else
-                    state = 0;
-                break;
-            case 3:
-                if (userExit == 0)
-                    OS_Sleep(1);
-                else {
-                    interface->Free(heap);
-                    state = 0;
-                }
-                break;
+            }
+            leaveCriticalSection(ime);
+            OS_SleepThread(OSi_IrqThreadQueue);
+            break;
+        case 2:
+            OS_SleepThread(NULL);
+            state = 0;
+            break;
         }
     }
 }
@@ -119,6 +141,19 @@ void SetBrightness(u8 screen, s8 bright) {
 }
 
 void LanucherThreadExt() {
+    KeyboardGameInterface *interface = GetKeyboardGameInterface();
+    void *heap = interface->Alloc(KEYBOARD_HEAP_SIZE);
+
+    if (!heap) {
+        gKeyboardVisible = false;
+        OS_WakeupThreadDirect(&backboardThread);
+        return;
+    }
+
+    InitHeap(heap, KEYBOARD_HEAP_SIZE);
+
+    u32 i;
+
     u32 dispcnt = REG_DISPCNT;
     u32 disp3dcnt = GFX_CONTROL;
     u16 bg0cnt = REG_BG0CNT;
@@ -127,7 +162,7 @@ void LanucherThreadExt() {
     u16 bg3cnt = REG_BG3CNT;
 
     u8 vramCRs[10];
-    for (int i = 0; i < 10; i++) {
+    for (i = 0; i < 10; i++) {
         if (i == 7) continue;
         vramCRs[i] = *(vu8 *)(0x04000240 + i);
         *(vu8 *)(0x04000240 + i) = 0;
@@ -165,10 +200,10 @@ void LanucherThreadExt() {
     glInit();
     
     //enable textures
-    glEnable( GL_TEXTURE_2D );
+    glEnable(GL_TEXTURE_2D);
     
     // enable antialiasing
-    glEnable( GL_ANTIALIAS );
+    glEnable(GL_ANTIALIAS);
 
     //this should work the same as the normal gl call
     glViewport(0,0,255,191);
@@ -184,7 +219,7 @@ void LanucherThreadExt() {
     // REG_BLDCNT = 0; // Register is write only, can't back up
     // REG_BLDALPHA = 0; // Register is write only, can't back up
     // REG_BLDY = 0; // Register is write only, can't back up
-    InitializeKeyboard(GetKeyboardGameInterface());
+    InitializeKeyboard(interface);
     InitPinyinInputMethod();
     RegisterKeyboardInputMethod(KEYBOARD_LANG_CHS, GetPinyinInputMethodInterface());
 
@@ -211,7 +246,10 @@ void LanucherThreadExt() {
         WaitVBlankIntr();
     }
 
-    OS_Sleep(500);
+    i = 30;
+    while (i--)
+        WaitVBlankIntr();
+        
 
     DeinitPinyinInputMethod();
     glResetTextures();
@@ -234,7 +272,7 @@ void LanucherThreadExt() {
     free(vramABackup);
     free(vramEBackup);
 
-    for (int i = 0; i < 10; i++) {
+    for (i = 0; i < 10; i++) {
         if (i == 7)
             continue;
         *(vu8 *)(0x04000240 + i) = vramCRs[i];
@@ -244,19 +282,28 @@ void LanucherThreadExt() {
     // GFX_CLEAR_DEPTH = 0x7FFF;
 
 
-    glMatrixMode( GL_PROJECTION );
+    glMatrixMode(GL_PROJECTION);
     glLoadMatrix4x4(&matrixProjection);
 
     ResetTPData();
     FinalizeKeyboard(result != 2);
     //    glFlush(0);
 
-    userExit = 1;
+    interface->Free(heap);
+    gKeyboardVisible = false;
+    OS_WakeupThreadDirect(&backboardThread);
+}
+
+void Hook_SVC_WaitVBlankIntr() {
+    void (* volatile func)() = (void (* volatile)())&SVC_WaitVBlankIntr;
+    func();
+    if (gKeyboardVisible)
+        LanucherThreadExt();
 }
 
 void StartKeyboardMonitorThread() {
     KeyboardGameInterface *interface = GetKeyboardGameInterface();
     interface->OnOverlayLoaded();
-    OS_CreateThread(&backboardThread, MonitorThreadEntry, 0, stack + sizeof(stack), sizeof(stack), 8);
+    OS_CreateThread(&backboardThread, MonitorThreadEntry, 0, stack + ARRAY_SIZE(stack), sizeof(stack), 8);
     OS_WakeupThreadDirect(&backboardThread);
 }

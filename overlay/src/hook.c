@@ -6,11 +6,15 @@
 static void *sHookMemory = NULL;
 static u32 sHookMemorySize = 0;
 
-void HookFunction(HookDataEntry * entry) {
+void HookFunction(HookARMEntry * entry) {
 	entry->oldInstruction = *(u32*)entry->functionAddr;
     if ((entry->oldInstruction & 0xFFFF0000) == 0xE59F0000) {
         entry->extraData = *(u32*)((u32)entry->functionAddr + 8 + (entry->oldInstruction & 0xFFF));
         entry->oldInstruction = entry->oldInstruction & ~0xFFF;
+    }
+    else if ((entry->oldInstruction & 0xFF000000) == 0xEA000000) {
+        u32 targetAddr = (u32)entry->functionAddr + 8 + ((s32)entry->oldInstruction << 8 >> 6);
+        entry->oldInstruction = MAKE_BRANCH(&entry->oldInstruction, targetAddr);
     }
 	*(u32*)entry->functionAddr = MAKE_BRANCH(entry->functionAddr, &entry->ldrInstruction);
     entry->ldrInstruction = 0xE51FF004;
@@ -18,7 +22,7 @@ void HookFunction(HookDataEntry * entry) {
 	if (entry->origFunctionRef)
 		*entry->origFunctionRef = (void*)&entry->oldInstruction;
 	DC_FlushRange(entry->functionAddr, sizeof(u32));
-	DC_FlushRange(entry, sizeof(HookDataEntry));
+	DC_FlushRange(entry, sizeof(HookARMEntry));
 }
 
 
@@ -97,7 +101,9 @@ void HookFunctionThumb(HookThumbEntry * entry) {
     begin = (u16*)((u32)entry->functionAddr & ~1);
     require = require * sizeof(u16) + 12 - (require & 1) * sizeof(u16);
 
-    entry->oldInstructions = (u16*)AllocHookMemory(require);
+    if (!entry->oldInstructions)
+        entry->oldInstructions = (u16*)AllocHookMemory(require);
+
     offset = 0;
     int tail = require / sizeof(u16);
     while (begin < end) {
@@ -220,8 +226,48 @@ void HookFunctionThumb(HookThumbEntry * entry) {
 }
 
 void ForceMakingBranchLink(void* origAddr, void* targetAddr) {
-    u32 *origAddrAligned = (u32*)((u32)origAddr & ~3);
-    u32 *targetAddrAligned = (u32*)((u32)targetAddr & ~3);
-    *origAddrAligned = MAKE_BRANCH_LINK(origAddrAligned, targetAddrAligned);
-    DC_FlushRange(origAddrAligned, sizeof(u32));
+    int mode;
+    if ((u32)origAddr & 1) {
+        if ((u32)targetAddr & 1) {
+            mode = 2;
+        }
+        else {
+            mode = 3;
+        }
+    }
+    else {
+        if ((u32)targetAddr & 1) {
+            mode = 1;
+        }
+        else {
+            mode = 0;
+        }
+    }
+
+    if (mode == 0 || mode == 1) {
+        origAddr = (void*)((u32)origAddr & ~3);
+    } else {
+        origAddr = (void*)((u32)origAddr & ~1);
+    }
+
+    if (mode == 0 || mode == 3) {
+        targetAddr = (void*)((u32)targetAddr & ~3);
+    } else {
+        targetAddr = (void*)((u32)targetAddr & ~1);
+    }
+
+    if (mode == 0)
+        *(u32*)origAddr = MAKE_BRANCH_LINK(origAddr, targetAddr);
+    else if (mode == 1)
+        *(u32*)origAddr = MAKE_BRANCH_LINK_EXCHANGE(origAddr, targetAddr);
+    else if (mode == 2) {
+        *(u16*)origAddr = MAKE_BRANCH_LINK_T_H(origAddr, targetAddr);
+        *(u16*)((u32)origAddr + 2) = MAKE_BRANCH_LINK_T_L(origAddr, targetAddr);
+    }
+    else {
+        *(u16*)origAddr = MAKE_BRANCH_LINK_EXCHAGE_T_H(origAddr, targetAddr);
+        *(u16*)((u32)origAddr + 2) = MAKE_BRANCH_LINK_EXCHAGE_T_L(origAddr, targetAddr);
+    }
+
+    DC_FlushRange((void *)((u32)origAddr & ~3), 8);
 }

@@ -15,6 +15,8 @@ SECTIONS
         *libgcc.a:_dvmd_tls.o(.text)
         *libcalico_ds9.a:arm-cache.32.o(.text.armDCacheFlush)
         *libcalico_ds9.a:arm-cache.32.o(.text.armDrainWriteBuffer)
+        *libcalico_ds9.a:arm-shims.32.o(.text.armIrqLockByPsr)
+        *libcalico_ds9.a:arm-shims.32.o(.text.armIrqUnlockByPsr)
         *libcalico_ds9.a:bios.o(.text.svcCpuSet)
         *libcalico_ds9.a:bios.o(.text.svcWaitByLoop)
         *libnds9.a:dynamicArray.o(.text.DynamicArrayDelete)

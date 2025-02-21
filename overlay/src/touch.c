@@ -1,6 +1,7 @@
 #include <nds/ndstypes.h>
 #include <nds/interrupts.h>
 #include <nds/ipc.h>
+#include <calico/arm/common.h>
 #include "touch.h"
 
 extern u8 HW_TOUCHPANEL_BUF[];
@@ -43,13 +44,13 @@ void RequestSamplingTPData() {
         REG_IPC_FIFO_CR |= (IPC_FIFO_ENABLE | IPC_FIFO_ERROR);
         return;
     }
-    int ime = enterCriticalSection();
+    ArmIrqState state = armIrqLockByPsr();
     if (REG_IPC_FIFO_CR & IPC_FIFO_SEND_FULL) {
-        leaveCriticalSection(ime);
+        armIrqUnlockByPsr(state);
         return;
     }
     REG_IPC_FIFO_TX = 0xC0000006;
-    leaveCriticalSection(ime);
+    armIrqUnlockByPsr(state);
 }
 
 void ResetTPData() {
