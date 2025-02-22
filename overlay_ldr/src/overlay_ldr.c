@@ -14,9 +14,10 @@ void (*const OverlayStaticInitFunc)() = LoadOverlay;
 
 void LoadOverlay() {
     static bool loaded = false;
-    if (loaded) return;
-    FS_LoadOverlay(0, OVERLAY_ID);
-    loaded = true;
+    if (!loaded) {
+        FS_LoadOverlay(0, OVERLAY_ID);
+        loaded = true;
+    }
     if (Orig_OverlayStaticInitBegin && Orig_OverlayStaticInitEnd) {
         for (void (**func)() = Orig_OverlayStaticInitBegin; func < Orig_OverlayStaticInitEnd; func++) {
             if (*func)
