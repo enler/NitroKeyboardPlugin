@@ -1,12 +1,17 @@
 import struct
 import ndspy.rom
 from elftools.elf.elffile import ELFFile
+from ndspy.code import MainCodeFile
+from ndspy.code import Overlay
+from ndspy.rom import NintendoDSRom
+from .ndspy_hotfix import NdspyHotfix
 
 class PatchUtil:
-    codefile: ndspy.code.MainCodeFile
-    overlay_table: dict[int, ndspy.code.Overlay]
+    codefile: MainCodeFile
+    overlay_table: dict[int, Overlay]
     def __init__(self, base_rom_path):
-        rom = ndspy.rom.NintendoDSRom.fromFile(base_rom_path)
+        NdspyHotfix.apply()
+        rom = NintendoDSRom.fromFile(base_rom_path)
         self.codefile = rom.loadArm9()
         self.overlay_table = rom.loadArm9Overlays(rom.arm9OverlayTable)
     
@@ -48,17 +53,31 @@ class PatchUtil:
         self.overlay_table[overlay_id].staticInitStart = overlay_ldr_static_init_func
         self.overlay_table[overlay_id].staticInitEnd = overlay_ldr_static_init_func + 4
         
-    def modify_arena_lo(self, overlay_elf_path, overlay_addr):
+    def patch_word(self, offset, value):
+        for section in self.codefile.sections:
+            if section.ramAddress <= offset < section.ramAddress + len(section.data):
+                offset = offset - section.ramAddress
+                struct.pack_into('<I', section.data, offset, value)
+                break
+        
+    def modify_arena_lo(self, overlay_elf_path, overlay_addr, patch_twl: bool = False):
+        arena_symbol = 'ArenaLo_twl' if patch_twl else 'ArenaLo'
+        arena_lo = None
+        overlay_size = None
+
         with open(overlay_elf_path, 'rb') as f:
             overlay_elf = ELFFile(f)
             symbol_table = overlay_elf.get_section_by_name('.symtab')
             if symbol_table:
                 for symbol in symbol_table.iter_symbols():
-                    if symbol.name == 'ArenaLo':
+                    if symbol.name == arena_symbol:
                         arena_lo = symbol['st_value']
                     elif symbol.name == '__size__':
                         overlay_size = symbol['st_value']
         
+        if arena_lo is None or overlay_size is None:
+            raise ValueError(f"Required symbols {arena_symbol} or __size__ not found")
+
         for section in self.codefile.sections:
             if section.ramAddress <= arena_lo < section.ramAddress + len(section.data):
                 offset = arena_lo - section.ramAddress
@@ -72,11 +91,16 @@ class PatchUtil:
                 buff = open(overlay_ldr_bin_path, 'rb').read()
                 section.data = section.data[:offset] + buff + section.data[offset + len(buff):]
                 break
+            
+    def load_arm9_from_file(self, arm9_path):
+        self.codefile = MainCodeFile.fromFile(arm9_path, self.codefile.ramAddress)
         
-    def save_arm9_binary(self, output_path):
+    def save_arm9_binary(self, output_path, *, skip_compression: bool = False):
         require_compressed = False
         if self.codefile.codeSettingsOffs is not None:
             require_compressed = struct.unpack_from('<I', self.codefile.sections[0].data, self.codefile.codeSettingsOffs + 0x14)[0] != 0
+        if skip_compression:
+            require_compressed = False
         codefile_bytes = self.codefile.save(compress=require_compressed)
         with open(output_path, 'wb') as f:
             f.write(codefile_bytes)

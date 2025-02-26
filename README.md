@@ -1,7 +1,8 @@
 Nitro Keyboard Plugin是一个为NDS汉化游戏开发的通用的支持中文输入的键盘插件  
-以下为效果演示  
+接入键盘插件后，可以在游戏内呼出键盘进行输入，以下为效果演示  
 ![效果演示_心金](preview/preview_hg.gif)  
 ![效果演示_雷顿](preview/preview_layton.gif)  
+像雷顿教授这种使用手写输入的游戏，也可以使用中文来回答了  
 
 TODO:  
 增加更多的演示，编写接入工具跟文档  

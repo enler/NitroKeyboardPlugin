@@ -5,7 +5,11 @@
 #include "nitro/sdk_ver.h"
 
 typedef struct _FSFile {
+#if NITROSDK_VER >= MAKE_NITROSDK_VER(5, 0)
+    u8 _[0x48];
+#else
     u8 _[0x3c];
+#endif
 } FSFile;
 
 typedef struct _FSOverlayInfo {
