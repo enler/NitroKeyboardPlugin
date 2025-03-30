@@ -17,8 +17,12 @@ OBJS    := $(C_OBJS) $(ASM_OBJS)
 ALL_OBJS := $(OBJS) $(NITRO_LIB_OBJS)
 DEPS   := $(ALL_OBJS:%.o=%.d)
 
-CFLAGS  := -g -w -Os -std=gnu99 -ffreestanding -mabi=aapcs -march=armv5te -mthumb -mtune=arm946e-s -mthumb-interwork $(foreach dir,$(INC_DIRS),-I $(dir)) -DARM9 -D__NDS__ -D__thumb__ -D__ARM_ARCH=5 -DNITROSDK_VER=$(NITROSDK_VER)
+COMPILE_MODE := -mthumb
+DEFS    := -DARM9 -D__NDS__ -D__thumb__ -D__ARM_ARCH=5 -DNITROSDK_VER=$(NITROSDK_VER)
+CFLAGS  := -g -w -Os -std=gnu99 -ffreestanding -mabi=aapcs -march=armv5te -mtune=arm946e-s -mthumb-interwork $(foreach dir,$(INC_DIRS),-I $(dir))
 LDFLAGS := -nostartfiles -nodefaultlibs -Ttext=$(OVERLAY_ADDR) -T linker.ld -T $(SYMBOLS_LD) -Wl,--use-blx -Wl,--wrap=glInit,--wrap=glResetTextures
+
+$(OBJ_DIR)/src/overlay_entry.o : COMPILE_MODE := -marm
 
 $(shell mkdir -p $(sort $(dir $(ALL_OBJS))))
 
@@ -30,7 +34,7 @@ all: $(OUTPUT_BIN)
 -include $(DEPS)
 
 $(OBJ_DIR)/%.o: %.c
-	$(CC) -MMD -MP -MF $(OBJ_DIR)/$*.d $(CFLAGS) -o $(OBJ_DIR)/$*.o -c $<
+	$(CC) -MMD -MP -MF $(OBJ_DIR)/$*.d $(CFLAGS) $(COMPILE_MODE) $(DEFS) -o $(OBJ_DIR)/$*.o -c $<
 
 $(OBJ_DIR)/%.o: %.S
 	$(CC) -D__ASSEMBLY__ $(CFLAGS) -c $< -o $@

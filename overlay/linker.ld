@@ -6,6 +6,7 @@ ENTRY(_start)
 SECTIONS
 {
     .text : {
+        *src/overlay_entry.o(.text)
         *src/*.o(.text*)
         *nitro.a:*.o(.text)
         *libc.a:libc_a-memcmp.o(.text.memcmp)
