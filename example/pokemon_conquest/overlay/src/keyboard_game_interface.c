@@ -119,7 +119,7 @@ static int GetMaxInputLength() {
     return 5;
 }
 
-static bool GetGlyph(u16 charCode, u8 *output, int *advance) {
+static bool LoadGlyph(u16 charCode, u8 *output, int *advance) {
     u8 *glyph = GetGameInternalGlyph((void*)0x20CC488, charCode, 0);
     if (!glyph)
         return false;
@@ -194,7 +194,7 @@ KeyboardGameInterface * GetKeyboardGameInterface() {
         .OnOverlayLoaded = OnOverlayLoaded,
         .ShouldShowKeyboard = ShouldShowKeyboard,
         .GetMaxInputLength = GetMaxInputLength,
-        .GetGlyph = GetGlyph,
+        .LoadGlyph = LoadGlyph,
         .KeycodeToChar = KeycodeToChar,
         .CanContinueInput = CanContinueInput,
         .OnInputFinished = OnInputFinished

@@ -277,7 +277,7 @@ typedef struct {
     void (*OnOverlayLoaded)();
     bool (*ShouldShowKeyboard)();
     int (*GetMaxInputLength)();
-    bool (*GetGlyph)(u16 charCode, u8 *output, int *advance);
+    bool (*LoadGlyph)(u16 charCode, u8 *output, int *advance);
     bool (*KeycodeToChar)(u16 keycode, u16 *output);
     bool (*CanContinueInput)(u16 *inputText, int length, u16 nextChar);
     void (*OnInputFinished)(u16 *inputText, int length, bool isCanceled);
@@ -359,7 +359,7 @@ void DeinitKeyboardFont();
 glImage *GetDefaultGlyph(KeyCode code);
 void SetDefaultKeysPalette(int palId);
 void CreateExternalFontPalette(int *paletteIds, u16 textColor, u16 bgColor);
-void SetGetGlyph(bool (*GetGlyph)(u16 charCode, u8 *output, int *advance));
+void RegisterGlyphLoader(bool (*LoadGlyph)(u16 charCode, u8 *output, int *advance));
 bool GetExternalGlyph(u16 charCode, glImage *glyphImage, int *palIndex, int *advance);
 
 KeyboardGameInterface *GetKeyboardGameInterface();

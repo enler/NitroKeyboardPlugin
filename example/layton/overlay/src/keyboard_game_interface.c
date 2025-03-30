@@ -131,7 +131,7 @@ static int GetMaxInputLength() {
         return 0;
 }
 
-static bool GetGlyphFromCustomFont(u16 charCode, u8 *output, int *advance) {
+static bool LoadGlyphFromCustomFont(u16 charCode, u8 *output, int *advance) {
     memset(output, 0, 64);
     // binary search in font file
     int left = 0;
@@ -221,7 +221,7 @@ KeyboardGameInterface * GetKeyboardGameInterface() {
         .OnOverlayLoaded = OnOverlayLoaded,
         .ShouldShowKeyboard = ShouldShowKeyboard,
         .GetMaxInputLength = GetMaxInputLength,
-        .GetGlyph = GetGlyphFromCustomFont,
+        .LoadGlyph = LoadGlyphFromCustomFont,
         .KeycodeToChar = KeycodeToChar,
         .CanContinueInput = CanContinueInput,
         .OnInputFinished = OnInputFinished

@@ -29,7 +29,7 @@ typedef struct {
     int textureId;
     int glyphCount;
     int glyphCapacity;
-    bool (*GetGlyph)(u16 charCode, u8 *output, int *advance);
+    bool (*LoadGlyph)(u16 charCode, u8 *output, int *advance);
 } ExternalFont;
 
 typedef struct {
@@ -257,18 +257,18 @@ void CreateExternalFontPalette(int * paletteIds, u16 textColor, u16 bgColor) {
     }
 }
 
-void SetGetGlyph(bool (*GetGlyph)(u16 charCode, u8 *output, int *advance)) {
-    gKeyboardFont->externalFont.GetGlyph = GetGlyph;
+void RegisterGlyphLoader(bool (*LoadGlyph)(u16 charCode, u8 *output, int *advance)) {
+    gKeyboardFont->externalFont.LoadGlyph = LoadGlyph;
 }
 
 bool LoadExternalGlyph(u16 charCode, int index) {
     ExternalFont *externalFont = &gKeyboardFont->externalFont;
-    if (!externalFont->GetGlyph) {
+    if (!externalFont->LoadGlyph) {
         return false;
     }
     u8 glyphData[EXTERNAL_GLYPH_WIDTH * EXTERNAL_GLYPH_HEIGHT / 4];
     int advance;
-    if (!externalFont->GetGlyph(charCode, glyphData, &advance)) {
+    if (!externalFont->LoadGlyph(charCode, glyphData, &advance)) {
         return false;
     }
     externalFont->glyphs[index].charCode = charCode;

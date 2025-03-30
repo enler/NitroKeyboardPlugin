@@ -26,8 +26,7 @@ __attribute__((weak)) extern void *SVC_WaitVBlankIntr;
 __attribute__((weak)) extern u32 SVC_WaitVBlankIntr_Caller;
 void Hook_SVC_WaitVBlankIntr();
 
-OSThread backboardThread;
-u32 stack[512 / sizeof(u32)];
+OSThread gMonitorThread;
 
 void WaitVBlankIntr() {
     vu32 *irqCheckFlags = (vu32 *)MpuGetDTCMRegion() + 0x3FF8 / sizeof(u32);
@@ -146,7 +145,7 @@ void LanucherThreadExt() {
 
     if (!heap) {
         gKeyboardVisible = false;
-        OS_WakeupThreadDirect(&backboardThread);
+        OS_WakeupThreadDirect(&gMonitorThread);
         return;
     }
 
@@ -291,7 +290,7 @@ void LanucherThreadExt() {
 
     interface->Free(heap);
     gKeyboardVisible = false;
-    OS_WakeupThreadDirect(&backboardThread);
+    OS_WakeupThreadDirect(&gMonitorThread);
 }
 
 void Hook_SVC_WaitVBlankIntr() {
@@ -302,8 +301,9 @@ void Hook_SVC_WaitVBlankIntr() {
 }
 
 void StartKeyboardMonitorThread() {
+    static u32 stack[512 / sizeof(u32)];
     KeyboardGameInterface *interface = GetKeyboardGameInterface();
     interface->OnOverlayLoaded();
-    OS_CreateThread(&backboardThread, MonitorThreadEntry, 0, stack + ARRAY_SIZE(stack), sizeof(stack), 8);
-    OS_WakeupThreadDirect(&backboardThread);
+    OS_CreateThread(&gMonitorThread, MonitorThreadEntry, 0, stack + ARRAY_SIZE(stack), sizeof(stack), 8);
+    OS_WakeupThreadDirect(&gMonitorThread);
 }

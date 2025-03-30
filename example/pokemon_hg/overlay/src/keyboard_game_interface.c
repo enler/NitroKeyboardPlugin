@@ -159,7 +159,7 @@ u32 Reverse2bitUnits(u32 pixelData) {
     return result;
 }
 
-static bool GetGlyph(u16 charCode, u8 *output, int *advance) {
+static bool LoadGlyph(u16 charCode, u8 *output, int *advance) {
     charCode--;
     u16 glyphData[16 * 16 / 4 / sizeof(u16)];
     u8 width;
@@ -252,7 +252,7 @@ KeyboardGameInterface * GetKeyboardGameInterface() {
         .OnOverlayLoaded = OnOverlayLoaded,
         .ShouldShowKeyboard = ShouldShowKeyboard,
         .GetMaxInputLength = GetMaxInputLength,
-        .GetGlyph = GetGlyph,
+        .LoadGlyph = LoadGlyph,
         .KeycodeToChar = KeycodeToChar,
         .CanContinueInput = CanContinueInput,
         .OnInputFinished = OnInputFinished

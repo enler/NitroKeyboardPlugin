@@ -52,7 +52,7 @@ static struct VirtualKeyboard *gVirtualKeyboard;
 
 void InitializeKeyboard(const KeyboardGameInterface *gameInterface) {
     InitKeyboardFont();
-    SetGetGlyph(gameInterface->GetGlyph);
+    RegisterGlyphLoader(gameInterface->LoadGlyph);
     gVirtualKeyboard = malloc(sizeof(struct VirtualKeyboard));
     memset(gVirtualKeyboard, 0, sizeof(struct VirtualKeyboard));
     gVirtualKeyboard->gameInterface = gameInterface;
