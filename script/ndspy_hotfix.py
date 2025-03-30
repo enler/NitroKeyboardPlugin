@@ -12,6 +12,7 @@ class NdspyHotfix:
     def new_code_init(self, data: bytes, ramAddress: int, codeSettingsPointerAddress: int | None = None):
         self.sections = []
         self.ramAddress = ramAddress
+        self.is_twl = False
 
         data = codeCompression.decompress(data)
 
@@ -37,7 +38,11 @@ class NdspyHotfix:
         if self.codeSettingsOffs != None:
             copyTableBegin, copyTableEnd, dataBegin = struct.unpack_from('<3I', data, self.codeSettingsOffs)
             sdk_ver_minor, sdk_ver_major = struct.unpack_from('2B', data, self.codeSettingsOffs + 0x1A)
-            self.is_twl = sdk_ver_major >= 5
+            if sdk_ver_major >= 5:
+                for i in range(0, 0x8000, 4):
+                    if data[i:i+8] == b'\x63\x14\xC0\xDE\xDE\xC0\x14\x63':
+                        self.is_twl = True
+                        break
             copyTableBegin -= ramAddress
             copyTableEnd -= ramAddress
             dataBegin -= ramAddress
