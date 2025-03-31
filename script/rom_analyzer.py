@@ -2,6 +2,7 @@ import yara
 import ndspy.rom
 import struct
 import os
+import sys
 import re
 from typing import List, Dict, Any
 from ndspy_hotfix import NdspyHotfix
@@ -818,7 +819,7 @@ def save_symbols(scan_results, path):
 def save_build_config(config, path):
     with open(path, 'w') as f:
         for key, value in config.items():
-            f.write(f"{key} = {value};\n")
+            f.write(f"{key} := {value}\n")
 
 if __name__ == '__main__':
     NdspyHotfix.apply()

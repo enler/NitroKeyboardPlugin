@@ -2,6 +2,7 @@
 #include <nds/interrupts.h>
 #include <nds/ipc.h>
 #include <calico/arm/common.h>
+#include "nitro/tp.h"
 #include "touch.h"
 
 extern u8 HW_TOUCHPANEL_BUF[];

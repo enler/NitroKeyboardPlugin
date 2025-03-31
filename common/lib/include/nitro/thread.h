@@ -34,6 +34,5 @@ void OS_CreateThread(OSThread *thread, void (*func) (void *), void *arg, void *s
 void OS_WakeupThreadDirect(OSThread *thread);
 void OS_ExitThread(void);
 void OS_SleepThread(void *queue);
-void OS_Sleep(u32 millisecond);
 
 #endif
