@@ -705,26 +705,32 @@ rule OS_SleepThread_SDK_3_0_THUMB {
         $code
 }
 
-rule DLAddFront {
+
+rule TP_GetCalibratedPoint {
     strings:
         $code = {
+            ?? B5 
+            [0-2]
+            05 1C 
             (
-            48 60 
-            00 22
+            ?? 48 
+            0C 1C 
             |
-            00 22
-            48 60 
-            ) 
-            0A 60 
+            0C 1C
+            ?? 48 
+            )
+            ?0 8E 
             00 28 
-            00 D0 
-            01 60 
-            08 1C 
-            70 47 
+            0? D1 
+            20 88 
+            28 80 
+            60 88 
+            68 80 
         }
     condition:
         $code
 }
+
 
 rule OS_AllocFromHeap {
     strings:
@@ -828,3 +834,29 @@ rule FndFreeToExpHeap {
         $code or $code2
 }
 
+rule OS_IsRunOnTwl_SDK_2_0_THUMB {
+    meta:
+        name = "OS_IsRunOnTwl"
+        sdk_version = "2.0"
+    condition:
+        false
+}
+
+rule OS_IsRunOnTwl_SDK_5_0_THUMB {
+    meta:
+        name = "OS_IsRunOnTwl"
+        sdk_version = "5.0"
+    strings:
+        $code = {
+            0? 48 
+            C0 69 
+            00 28 
+            0? D1 
+            0? 48 
+            01 78 
+            03 20 
+            08 40 
+        }
+    condition:
+        $code
+}

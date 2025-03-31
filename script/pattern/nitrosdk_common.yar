@@ -67,3 +67,76 @@ rule InitExpHeap_constant {
     condition:
         $constant
 }
+
+rule SVC_WaitVBlankIntr {
+    meta:
+        type = "thumb"
+    strings:
+        $code = {
+            00 22 05 DF 70 47 
+        }
+    condition:
+        $code
+}
+
+rule Syscalls {
+    meta:
+        type = "thumb"
+    strings:
+        $SVC_SoftReset = {
+            00 DF 70 47
+        }
+        $SVC_WaitByLoop = {
+            03 DF 70 47
+        }
+        $SVC_WaitIntr = {
+            00 22 04 DF 70 47 
+        }
+        $SVC_WaitVBlankIntr = {
+            00 22 05 DF 70 47 
+        }
+        $SVC_Halt = {
+            06 DF 70 47 
+        }
+        $SVC_Div = {
+            09 DF 70 47 
+        }
+        $SVC_DivRem = {
+            09 DF 08 1C 70 47 
+        }
+        $SVC_CpuSet = {
+            0B DF 70 47
+        }
+        $SVC_CpuSetFast = {
+            0C DF 70 47
+        }
+        $SVC_Sqrt = {
+            0D DF 70 47
+        }
+        $SVC_GetCRC16 = {
+            0E DF 70 47
+        }
+        $IsMmemExpanded = {
+            0F DF 70 47
+        }
+        $SVC_UnpackBits = {
+            10 DF 70 47
+        }
+        $SVC_UncompressLZ8 = {
+            11 DF 70 47
+        }
+        $SVC_UncompressLZ16FromDevice = {
+            12 DF 70 47
+        }
+        $SVC_UncompressHuffmanFromDevice = {
+            13 DF 70 47
+        }
+        $SVC_UncompressRL8 = {
+            14 DF 70 47
+        }
+        $SVC_UncompressRL16FromDevice = {
+            15 DF 70 47
+        }
+    condition:
+        any of them
+}

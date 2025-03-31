@@ -576,7 +576,7 @@ rule FS_LoadOverlayImage_SDK_5_0_ARM {
     strings:
         $code = {
             ?? 4? 2D E9 
-            ?? D0 4D E2 
+            (3? | 4? | 5? | 6?) D0 4D E2 
             [8-12]
             00 ?0 A0 E3 
             ?? ?? ?? EB 
@@ -713,10 +713,7 @@ rule OS_SleepThread_SDK_3_0_ARM {
         $code
 }
 
-rule TP_GetCalibratedPoint_SDK_2_0_ARM {
-    meta:
-        name = "TP_GetCalibratedPoint"
-        sdk_version = "2.0"
+rule TP_GetCalibratedPoint {
     strings:
         $code = {
             70 40 2D E9 
