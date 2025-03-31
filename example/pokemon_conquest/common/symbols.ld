@@ -1,8 +1,8 @@
 Orig_OverlayStaticInitBegin = 0x022371FC;
 Orig_OverlayStaticInitEnd = 0x02237200;
 FS_LoadOverlay = 0x02097A08;
-ArenaLo = 0x0201C504;
-ArenaLo_twl = 0x0201C500;
+PtrToArenaLo = 0x0201C504;
+PtrToArenaLo_twl = 0x0201C500;
 FS_InitFile = 0x0200BE74;
 FS_OpenFile = 0x0200C29C;
 FS_ReadFile = 0x0200C1CC;

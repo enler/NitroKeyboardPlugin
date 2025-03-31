@@ -61,7 +61,7 @@ class PatchUtil:
                 break
         
     def modify_arena_lo(self, overlay_elf_path, overlay_addr, patch_twl: bool = False):
-        arena_symbol = 'ArenaLo_twl' if patch_twl else 'ArenaLo'
+        arena_symbol = 'PtrToArenaLo_twl' if patch_twl else 'PtrToArenaLo'
         arena_lo = None
         overlay_size = None
 

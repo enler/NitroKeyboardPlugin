@@ -1,4 +1,4 @@
-ArenaLo = 0x020A492C;
+PtrToArenaLo = 0x020A492C;
 FS_InitFile = 0x020A9CD0;
 FS_OpenFile = 0x020A9980;
 FS_SeekFile = 0x020A97DC;
