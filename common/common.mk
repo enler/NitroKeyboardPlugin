@@ -32,11 +32,10 @@ COMMON_INC_DIRS:= $(COMMON_DIR)/lib/include $(COMMON_DIR)/include $(DEVKITARM)/.
 NITRO_LIB_SRCS := $(wildcard $(COMMON_DIR)/lib/src/nitro/*.c)
 NITRO_LIB_OBJS := $(patsubst $(COMMON_DIR)/lib/%, $(OBJ_DIR)/lib/%, $(NITRO_LIB_SRCS:.c=.o))
 
+NITRO_LIB_COMPILE_MODE := -mthumb -mthumb-interwork
 NITRO_LIB_C_FLAGS := -Os -mabi=aapcs -march=armv5te -mtune=arm946e-s -DARM9=1 -D__NDS__ -DNITROSDK_VER=$(NITROSDK_VER)
-ifeq ($(IS_NITROSDK_THUMB), 1)
-NITRO_LIB_C_FLAGS += -mthumb -mthumb-interwork
-else
-NITRO_LIB_C_FLAGS += -marm
+ifeq ($(IS_NITROSDK_THUMB), 0)
+$(OBJ_DIR)/lib/src/nitro/import.o: NITRO_LIB_COMPILE_MODE := -marm
 endif
 
 .PHONY: all
@@ -45,7 +44,7 @@ all:
 	@:
 
 $(NITRO_LIB_OBJS): $(OBJ_DIR)/%.o: $(COMMON_DIR)/%.c
-	$(CC) -MMD -MP -MF $(OBJ_DIR)/$*.d  $(foreach dir,$(COMMON_INC_DIRS),-I $(dir)) $(NITRO_LIB_C_FLAGS) -o $(OBJ_DIR)/$*.o -c $<
+	$(CC) -MMD -MP -MF $(OBJ_DIR)/$*.d  $(foreach dir,$(COMMON_INC_DIRS),-I $(dir)) $(NITRO_LIB_C_FLAGS) $(NITRO_LIB_COMPILE_MODE) -o $(OBJ_DIR)/$*.o -c $<
 
 $(NITRO_LIB): $(NITRO_LIB_OBJS)
 	$(AR) rcs $@ $^

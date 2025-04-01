@@ -8,7 +8,7 @@ SECTIONS
     .text : {
         *src/overlay_entry.o(.text)
         *src/*.o(.text*)
-        *nitro.a:*.o(.text)
+        *nitro.a:import.o(.text)
         *libc.a:libc_a-memcmp.o(.text.memcmp)
         *libc.a:libc_a-memcpy-stub.o(.text.memcpy)
         *libc.a:libc_a-memset.o(.text.memset)
