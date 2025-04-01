@@ -58,12 +58,12 @@ def main():
         if keycode_value_unicode in encoding_table:
             keycode_to_custom_code[keycode_name] = encoding_table[keycode_value_unicode]
         else:
-            print(f"Character '{keycode_value_unicode}' not found in encoding table")
+            print(f"Keycode {keycode_name} ('{keycode_value_unicode}') not found in encoding table")
     
     sorted_keycode_to_custom_code = dict(sorted(keycode_to_custom_code.items(), key=lambda item: filtered_keycode_dict[item[0]]))
 
     # 输出C数组
-    print("const struct KeycodeConvItem gKeycodeConvTable[] = {")
+    print("const KeycodeConvItem gKeycodeConvTable[] = {")
     for keycode_name, custom_code in sorted_keycode_to_custom_code.items():
         print(f'    {{{keycode_name}, 0x{custom_code:04X}}},')
     print("};")

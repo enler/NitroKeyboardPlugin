@@ -41,6 +41,30 @@ class PatchUtil:
                                                                 init_functions_end, 
                                                                 overlay_id, 0, 0)
         
+    def add_overlay_as_section(self, overlay_elf_path, overlay_bin_path, overlay_addr):
+        with open(overlay_elf_path, 'rb') as f:
+            overlay_elf = ELFFile(f)
+            symbol_table = overlay_elf.get_section_by_name('.symtab')
+            if symbol_table:
+                for symbol in symbol_table.iter_symbols():
+                    if symbol.name == '__ram_size__':
+                        overlay_ram_size = symbol['st_value']
+                    elif symbol.name == '__bss_size__':
+                        overlay_bss_size = symbol['st_value']
+
+        with open(overlay_bin_path, 'rb') as f:
+            overlay_data = f.read()
+
+        ram_buffer = bytearray(overlay_ram_size)
+        ram_buffer[:len(overlay_data)] = overlay_data
+
+        self.codefile.sections.append(ndspy.code.MainCodeFile.Section(
+            data=bytes(ram_buffer),
+            ramAddress=overlay_addr,
+            bssSize=overlay_bss_size
+        ))
+                        
+        
     def modify_overlay_init_functions(self, overlay_id, overlay_ldr_elf_path):
         with open(overlay_ldr_elf_path, 'rb') as f:
             overlay_ldr_elf = ELFFile(f)
@@ -92,10 +116,10 @@ class PatchUtil:
                 section.data = section.data[:offset] + buff + section.data[offset + len(buff):]
                 break
             
-    def load_arm9_from_file(self, arm9_path):
+    def reload_arm9_binary(self, arm9_path):
         self.codefile = MainCodeFile.fromFile(arm9_path, self.codefile.ramAddress)
         
-    def save_arm9_binary(self, output_path, *, skip_compression: bool = False):
+    def save_arm9_binary(self, output_path, skip_compression: bool = False):
         require_compressed = False
         if self.codefile.codeSettingsOffs is not None:
             require_compressed = struct.unpack_from('<I', self.codefile.sections[0].data, self.codefile.codeSettingsOffs + 0x14)[0] != 0
