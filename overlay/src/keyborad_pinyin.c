@@ -33,9 +33,9 @@ typedef struct {
 
 PinyinInputMethod *gPinyinInputMethod;
 
-static bool OnKeyPressed(struct VirtualKeyboard *keyboard, struct Key *key);
-static bool OnKeyDraw(const struct VirtualKeyboard *keyboard, const struct Key *key);
-static bool OnInputStringDraw(struct VirtualKeyboard *keyboard, struct TextBox *textBox);
+static bool OnKeyPressed(VirtualKeyboard *keyboard, Key *key);
+static bool OnKeyDraw(const VirtualKeyboard *keyboard, const Key *key);
+static bool OnInputStringDraw(struct VirtualKeyboard *keyboard, TextBox *textBox);
 
 KeyboardInputMethodInterface * GetPinyinInputMethodInterface() {
     if (!gPinyinInputMethod)
@@ -127,7 +127,7 @@ void OnSwitchCandidate(bool isNextPage) {
     }
 }
 
-static bool OnKeyPressed(struct VirtualKeyboard *keyboard, struct Key *key) {
+static bool OnKeyPressed(VirtualKeyboard *keyboard, Key *key) {
     if(key->code >= KEYCODE_a && key->code <= KEYCODE_z) {
         if(gPinyinInputMethod->inputLetterNum < MAX_INPUT_LETTER_NUM) {
             gPinyinInputMethod->inputLetter[gPinyinInputMethod->inputLetterNum++] = key->code;
@@ -190,7 +190,7 @@ static bool OnKeyPressed(struct VirtualKeyboard *keyboard, struct Key *key) {
     return false;
 }
 
-static bool OnKeyDraw(const struct VirtualKeyboard *keyboard, const struct Key *key) {
+static bool OnKeyDraw(const VirtualKeyboard *keyboard, const Key *key) {
     if (gPinyinInputMethod->candidateNum == 0) {
         return false;
     }
@@ -219,7 +219,7 @@ static bool OnKeyDraw(const struct VirtualKeyboard *keyboard, const struct Key *
     return false;
 }
 
-static bool OnInputStringDraw(struct VirtualKeyboard *keyboard, struct TextBox *textBox) {
+static bool OnInputStringDraw(VirtualKeyboard *keyboard, TextBox *textBox) {
     if (gPinyinInputMethod->inputLetterNum == 0) {
         return false;
     }

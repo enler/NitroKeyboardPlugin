@@ -48,13 +48,13 @@ const u16 gGlyphTexPal[] = {
     RGB15(0, 0, 0),
 };
 
-static struct VirtualKeyboard *gVirtualKeyboard;
+static VirtualKeyboard *gVirtualKeyboard;
 
 void InitializeKeyboard(const KeyboardGameInterface *gameInterface) {
     InitKeyboardFont();
     RegisterGlyphLoader(gameInterface->LoadGlyph);
-    gVirtualKeyboard = malloc(sizeof(struct VirtualKeyboard));
-    memset(gVirtualKeyboard, 0, sizeof(struct VirtualKeyboard));
+    gVirtualKeyboard = malloc(sizeof(VirtualKeyboard));
+    memset(gVirtualKeyboard, 0, sizeof(VirtualKeyboard));
     gVirtualKeyboard->gameInterface = gameInterface;
     int rowOffsets[] = {0, (KEY_BUTTON_WIDTH + KEY_BUTTON_SPACING) / 2, (KEY_BUTTON_WIDTH + KEY_BUTTON_SPACING), (KEY_BUTTON_WIDTH + KEY_BUTTON_SPACING) * 3 / 2, (KEY_BUTTON_WIDTH + KEY_BUTTON_SPACING) * 2};
     int rowLengths[] = {12, 10, 9, 10, 3};
@@ -80,7 +80,7 @@ void InitializeKeyboard(const KeyboardGameInterface *gameInterface) {
         gVirtualKeyboard->normalKeys[i].code = KeyboardMap[i];
     }
 
-    struct Key functionKeys[] = {
+    Key functionKeys[] = {
         {0, 2 * (KEY_BUTTON_HEIGHT + KEY_BUTTON_SPACING), KEY_BUTTON_WIDTH, KEY_BUTTON_HEIGHT, KEYCODE_CAPS_LOCK},
         {0, 3 * (KEY_BUTTON_HEIGHT + KEY_BUTTON_SPACING), (KEY_BUTTON_WIDTH + KEY_BUTTON_SPACING) * 3 / 2 - 1, KEY_BUTTON_HEIGHT, KEYCODE_SHIFT},
         {(KEY_BUTTON_WIDTH + KEY_BUTTON_SPACING) * 21 / 2, 1 * (KEY_BUTTON_HEIGHT + KEY_BUTTON_SPACING), (KEY_BUTTON_WIDTH + KEY_BUTTON_SPACING) * 3 / 2 - 1, KEY_BUTTON_HEIGHT, KEYCODE_BACKSPACE},
@@ -139,7 +139,7 @@ void FinalizeKeyboard(bool isCancelled) {
 
 void DrawInputTextBox() {
     KeyboardInputMethodInterface *inputMethodInterface = gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
-    struct TextBox textBox = gVirtualKeyboard->inputTextBox;
+    TextBox textBox = gVirtualKeyboard->inputTextBox;
     glBoxFilled(textBox.x, textBox.y, textBox.x + textBox.width - 1, textBox.y + textBox.height - 1, TEXTBOX_BG_COLOR);
     if (inputMethodInterface && inputMethodInterface[gVirtualKeyboard->language].OnInputStringDraw(gVirtualKeyboard, &textBox)) {
         return;
@@ -172,7 +172,7 @@ void DrawInputTextBox() {
     }
 }
 
-void DrawKey(struct Key *key) {
+void DrawKey(Key *key) {
     KeyboardInputMethodInterface *inputMethodInterface = gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
 
     int x = key->x + gVirtualKeyboard->x;
@@ -201,12 +201,12 @@ void DrawKeyboard() {
     glBoxFilled(0, 0, 256, 192, KEYBOARD_BG_COLOR);
     SetDefaultKeysPalette(gVirtualKeyboard->keyTexPalId);
     for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->normalKeys); i++) {
-        struct Key key = gVirtualKeyboard->normalKeys[i];
+        Key key = gVirtualKeyboard->normalKeys[i];
         DrawKey(&key);
     }
 
     for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->functionKeys); i++) {
-        struct Key key = gVirtualKeyboard->functionKeys[i];
+        Key key = gVirtualKeyboard->functionKeys[i];
         DrawKey(&key);
     }
     DrawInputTextBox();
@@ -220,7 +220,7 @@ void SwitchKeyboardLayer(u8 * keyboardMap) {
 }
 
 void TryAddCharToInput(u16 charCode) {
-    struct TextBox *textBox = &gVirtualKeyboard->inputTextBox;
+    TextBox *textBox = &gVirtualKeyboard->inputTextBox;
     KeyboardGameInterface *gameInterface = gVirtualKeyboard->gameInterface;
     if (textBox->length >= textBox->maxLength)
         return;
@@ -230,7 +230,7 @@ void TryAddCharToInput(u16 charCode) {
 }
 
 void TryAddKeycodeToInput(KeyCode keyCode) {
-    struct TextBox *textBox = &gVirtualKeyboard->inputTextBox;
+    TextBox *textBox = &gVirtualKeyboard->inputTextBox;
     KeyboardGameInterface *gameInterface = gVirtualKeyboard->gameInterface;
     if (textBox->length >= textBox->maxLength)
         return;
@@ -240,7 +240,7 @@ void TryAddKeycodeToInput(KeyCode keyCode) {
     }
 }
 
-void ProcessKey(struct Key *key, int x, int y, int *result, KeyboardInputMethodInterface *inputMethodInterface) {
+void ProcessKey(Key *key, int x, int y, int *result, KeyboardInputMethodInterface *inputMethodInterface) {
     int keyX = key->x + gVirtualKeyboard->x;
     int keyY = key->y + gVirtualKeyboard->y;
 
@@ -271,7 +271,7 @@ void ProcessKey(struct Key *key, int x, int y, int *result, KeyboardInputMethodI
                 SwitchKeyboardLayer(gVirtualKeyboard->isCapsLocked ? KeyboardMapUppercase : KeyboardMap);
             }
             else if (key->code == KEYCODE_BACKSPACE) {
-                struct TextBox *textBox = &gVirtualKeyboard->inputTextBox;
+                TextBox *textBox = &gVirtualKeyboard->inputTextBox;
                 if (textBox->length > 0)
                 {
                     textBox->text[textBox->length - 1] = 0;

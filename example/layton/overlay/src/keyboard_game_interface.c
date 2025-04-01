@@ -31,7 +31,7 @@ static u32 (*Orig_HandleTPHandwriting)(void *arg);
 
 extern u8 gUsingBoldFont;
 
-const struct KeycodeConvItem KeycodeConvTable[] = {
+const KeycodeConvItem KeycodeConvTable[] = {
     {KEYCODE_FULLWIDTH_SPACE, 0x8140},
     {KEYCODE_CHINESE_PERIOD, 0x8142},
     {KEYCODE_FULLWIDTH_EXCLAMATION, 0x8149},

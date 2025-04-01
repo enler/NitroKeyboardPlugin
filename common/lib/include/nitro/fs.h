@@ -4,7 +4,7 @@
 #include <nds/ndstypes.h>
 #include "nitro/sdk_ver.h"
 
-typedef struct _FSFile {
+typedef struct {
 #if NITROSDK_VER >= MAKE_NITROSDK_VER(5, 0)
     u8 _[0x48];
 #else
@@ -12,7 +12,7 @@ typedef struct _FSFile {
 #endif
 } FSFile;
 
-typedef struct _FSOverlayInfo {
+typedef struct {
     u8 _[44];
 } FSOverlayInfo;
 
@@ -32,7 +32,7 @@ static inline u32 FS_GetLength(const FSFile *p_file) {
 }
 #endif
 
-bool FS_SeekFile( FSFile *p_file, s32 offset, s32 origin );
+bool FS_SeekFile(FSFile *p_file, s32 offset, s32 origin);
 s32 FS_ReadFile(FSFile *p_file, void *dst, s32 len);
 bool FS_CloseFile(FSFile *p_file);
 

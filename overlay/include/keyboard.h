@@ -242,7 +242,7 @@ typedef enum {
     KEY_STATE_EXIT = 1 << 4
 } KeyState;
 
-struct Key {
+typedef struct {
     int x;
     int y;
     int width;
@@ -252,9 +252,9 @@ struct Key {
     bool isPressed;
     bool isHeld;
     glImage *glyph;
-};
+} Key;
 
-struct TextBox {
+typedef struct {
     int x;
     int y;
     int width;
@@ -262,14 +262,14 @@ struct TextBox {
     u16 *text;
     int maxLength;
     int length;
-};
+} TextBox;
 
-struct KeycodeConvItem {
+typedef struct {
     u16 keyCode;
     u16 charCode;
-};
+} KeycodeConvItem;
 
-struct VirtualKeyboard;
+typedef struct VirtualKeyboard VirtualKeyboard;
 
 typedef struct {
     void * (*Alloc)(u32 size);
@@ -284,15 +284,15 @@ typedef struct {
 } KeyboardGameInterface;
 
 typedef struct {
-    bool (*OnKeyPressed)(struct VirtualKeyboard *keyboard, struct Key *key);
-    bool (*OnKeyDraw)(const struct VirtualKeyboard *keyboard, const struct Key *key);
-    bool (*OnInputStringDraw)(struct VirtualKeyboard *keyboard, struct TextBox *textBox);
+    bool (*OnKeyPressed)(VirtualKeyboard *keyboard, Key *key);
+    bool (*OnKeyDraw)(const VirtualKeyboard *keyboard, const Key *key);
+    bool (*OnInputStringDraw)(VirtualKeyboard *keyboard, TextBox *textBox);
 } KeyboardInputMethodInterface;
 
 typedef struct VirtualKeyboard {
-    struct Key normalKeys[46];
-    struct Key functionKeys[5];
-    struct Key *currentKey;    
+    Key normalKeys[46];
+    Key functionKeys[5];
+    Key *currentKey;    
     int x;
     int y;
     int glyphBaseline;
@@ -305,10 +305,10 @@ typedef struct VirtualKeyboard {
     int glyphTexPalId;
     int externalGlyphKeyPalIds[EXTERNAL_FONT_PALETTE_SIZE];
     int externalGlyphTextBoxPalIds[EXTERNAL_FONT_PALETTE_SIZE];
-    struct TextBox inputTextBox;
+    TextBox inputTextBox;
     const KeyboardGameInterface *gameInterface;
     KeyboardInputMethodInterface *inputMethodInterface[KEYBOARD_LANG_MAX];
-};
+} VirtualKeyboard;
 
 void StartKeyboardMonitorThread();
 
@@ -332,7 +332,7 @@ static inline u16 HalfToFullWidth(u16 halfWidth) {
     return 0x0000;
 }
 
-static inline int FindCustomCharCode(const struct KeycodeConvItem *table, int tableSize, u16 keyCode) {
+static inline int FindCustomCharCode(const KeycodeConvItem *table, int tableSize, u16 keyCode) {
     int left = 0;
     int right = tableSize - 1;
     while (left <= right) {

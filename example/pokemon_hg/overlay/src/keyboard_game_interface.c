@@ -41,7 +41,7 @@ static GameInternalContext gInternalContext;
 
 static u16 gBppConvTable[256];
 
-const struct KeycodeConvItem KeycodeConvTable[] = {
+const KeycodeConvItem KeycodeConvTable[] = {
     {KEYCODE_SPACE, 0x01DE},
     {KEYCODE_EXCLAMATION, 0x01AB},
     {KEYCODE_HASH, 0x01C0},
