@@ -140,7 +140,7 @@ def detect_sdk_arch(codefile, arm_rules: List[Dict], thumb_rules: List[Dict], ta
     else:
         return None
         
-def get_require_symbols(sdk_version, is_twl):
+def get_require_symbols(sdk_version, is_hybid):
     symbols = ['PtrToArenaLo',
                'FS_InitFile',
                'FS_OpenFile',
@@ -159,7 +159,7 @@ def get_require_symbols(sdk_version, is_twl):
                'FS_LoadOverlay']
     if sdk_version >= (5, 0):
         symbols.append('FS_GetLength')
-        if is_twl:
+        if is_hybid:
             symbols.append('PtrToArenaLo_twl')
     
     return symbols
@@ -387,7 +387,7 @@ def find_osi_irq_thread_queue(sections, scan_results: List[Dict]):
         })
     
         
-def find_arena_lo(codefile, scan_results):
+def find_arena_lo(sections, scan_results, is_hybid):
     # 获取目标扫描结果
     result = next((item for item in scan_results if item['name'] == 'OS_GetInitArenaLo_constant'), None)
     if not result or not result['addresses']:
@@ -398,7 +398,7 @@ def find_arena_lo(codefile, scan_results):
     offset = 0
     
     # 查找对应的section
-    for section in codefile.sections:
+    for section in sections:
         if addr >= section.ramAddress and addr < section.ramAddress + len(section.data):
             offset = addr - section.ramAddress
             target_section = section
@@ -459,7 +459,7 @@ def find_arena_lo(codefile, scan_results):
     if imm_offset is None:
         return False
     
-    if codefile.is_twl:
+    if is_hybid:
         ptr_to_arena_lo_twl = imm_offset + target_section.ramAddress
         arena_lo_twl = struct.unpack_from('<I', section_data, imm_offset)[0]
         ptr_to_arena_lo = ptr_to_arena_lo_twl + 4
@@ -494,7 +494,7 @@ def find_arena_lo(codefile, scan_results):
 def find_injectable_areas(sections, arm9_ram_addr, scan_results):
     syscalls = next((item for item in scan_results if item['name'] == 'Syscalls'), None)
     if not syscalls:
-        print("未找到Syscalls的地址")
+        print("未找到Syscalls的地址，secure area可能已加密")
         return 0
     
     syscall_addrs = sorted([addr for addr in syscalls['addresses'] if addr < arm9_ram_addr + 0x800])
@@ -649,8 +649,8 @@ def verify_symbols(sections, sdk_version, scan_results):
             else:
                 find_matched_func_call(sections, scan_results, source_name, target_name, -offset)
                         
-def check_required_symbols(scan_results, sdk_verison, is_twl):
-    require_symbols = get_require_symbols(sdk_verison, is_twl)
+def check_required_symbols(scan_results, sdk_verison, is_hybid):
+    require_symbols = get_require_symbols(sdk_verison, is_hybid)
     for symbol in require_symbols:
         result = next((item for item in scan_results if item['name'] == symbol), None)
         if not result:
@@ -753,9 +753,9 @@ def analyze_rom(nds_path: str):
         find_osi_irq_thread_queue(codefile.sections, scan_results)
         
         calc_shared_variable_addr(codefile.sections, scan_results)
-        find_arena_lo(codefile, scan_results)
+        find_arena_lo(codefile.sections, scan_results, rom.unitCode == 2)
         
-        require_symbols = get_require_symbols(sdk_version, codefile.is_twl)
+        require_symbols = get_require_symbols(sdk_version, rom.unitCode == 2)
         optional_symbols = get_optional_symbols()
         missing_symbols = [s for s in require_symbols + optional_symbols if not any(r['name'] == s for r in scan_results)]
         if len(missing_symbols) > 0:
@@ -770,7 +770,7 @@ def analyze_rom(nds_path: str):
         
         num_of_overlay = analyze_overlay(rom)
         
-        check_required_symbols(scan_results, sdk_version, codefile.is_twl)
+        check_required_symbols(scan_results, sdk_version, rom.unitCode == 2)
         for item in scan_results:
             addrs = ', '.join(hex(a) for a in sorted(item['addresses']))
             if item['name'] in require_symbols + optional_symbols and len(item['addresses']) > 1:
