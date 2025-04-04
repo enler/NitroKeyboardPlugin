@@ -1,3 +1,4 @@
 freetype_py==2.4.0
 ndspy==4.2.0
 pyelftools==0.31
+yara_python==4.5.1
