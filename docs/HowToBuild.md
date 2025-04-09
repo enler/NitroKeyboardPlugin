@@ -87,7 +87,8 @@ ndsi增强游戏都有2个arena指针，一个是nds模式用，一个是ndsi模
 ```
 
 这个游戏的arm9i并没有加载在overlay区域的后面，而是加载到了0x2700000这个地址上，  
-不然在ndsi模式下，宝可梦黑白2汉化版的中文输入法将被arm9i.bin覆盖，导致奔溃，这也使得黑白2在ndsi模式下有接近5M的内存没有被游戏利用。
+不然在ndsi模式下，宝可梦黑白2汉化版的中文输入法将被arm9i.bin覆盖，导致奔溃，这也使得黑白2在ndsi模式下有接近5M的内存没有被游戏利用。  
+可以利用本插件提供的rom_analyzer.py脚本来确认arena的地址。
 
 ## 关于overlay
 
@@ -108,7 +109,7 @@ nds的overlay是一种动态加载的模块，但是它不具备动态链接之�
 overlay_ldr正是调用了`FS_LoadOverlay`来加载键盘插件的overlay。
 
 不过，事情显然并不会这么顺利，首先并不是所有游戏都使用了overlay，  
-对于没有使用overlay的游戏，并不会链接FS_LoadOverlay在内的overlay函数，  
+对于没有使用overlay的游戏，并不会链接`FS_LoadOverlay`在内的overlay函数，  
 其次就算是使用了overlay，它也有可能用其他方式加载overlay，  
 sdk中还提供了`FS_LoadOverlayImage`这种只加载overlay的接口，  
 宝可梦信长就是自己实现了一套加载overlay的方案。  
@@ -148,6 +149,7 @@ python script/rom_analyzer.py <nds_rom_path> > log.txt
 
 然后打开config.mk，  
 `OVERLAY_ADDR`就是overlay的地址，如果你找到了其他合适存放键盘插件的内存空间，可以修改它。  
+`OVERLAY_NAME`是overlay的文件名前缀，有些打包工具会用overlay9_开头，请根据实际情况修改  
 `OVERLAY_LDR_ADDR`是overlay_ldr的地址，位于arm9.bin的头部。  
 
 arm9头部的2048字节是secure area，其中随机插入了syscalls函数，但大部分还是无用数据，  
@@ -162,7 +164,7 @@ rom_analyzer.py会寻找其中可能无用的区域来作为overlay_ldr的加载
 我推荐的方案是替换掉游戏中第一个被载入的overlay的静态初始化函数，  
 通过修改overlay_table，将第一个被载入的overlay的静态初始化函数替换成overlay_ldr中的函数，  
 此时当第一个overlay被加载之后，在调用静态初始化函数的时候就会跳转到overlay_ldr中了，  
-然后overlay_ldr再去调用一个overlay的静态初始化函数，完成闭环。  
+然后overlay_ldr再去调用第一个overlay的静态初始化函数，完成闭环。  
 
 原本的流程是  
 ```
@@ -407,6 +409,92 @@ REG_BG0VOFS = 512 + bg0V;
 但是雷顿的`overlay_ldr`则是需要靠hook跳转来执行，为了进行hook，雷顿的`patch.py`还调用了`armips`。  
 
 # 6. 实战建议
+
+## 快速接入
+在配置好config.mk，  
+确定symbols.ld的符号是完整的之后（如果不完整，rom_analyzer.py会警告，没有警告就是完整的），  
+先将这2个文件复制到common目录下，  
+接着将下列代码存为keyboard_game_interface.c，然后复制到overlay/src目录下  
+```c
+#include <nds/ndstypes.h>
+#include "nitro/heap.h"
+#include "nitro/pad.h"
+#include "keyboard.h"
+
+static void* Alloc(u32 size) {
+    static u8 heap[KEYBOARD_HEAP_SIZE];
+    return heap;
+}
+
+static void Free(void *ptr) {
+
+}
+
+static void OnOverlayLoaded() {
+
+}
+
+static bool ShouldShowKeyboard() {
+    return KEY_PRESSED(KEY_R | KEY_X);
+}
+
+static int GetMaxInputLength() {
+    return 0;
+}
+
+static bool LoadGlyph(u16 charCode, u8 *output, int *advance) {
+    return false;
+}
+
+static bool KeycodeToChar(u16 keycode, u16 *output) {
+    return false;
+}
+
+static bool CanContinueInput(u16 *inputText, int length, u16 nextChar) {
+    return true;
+}
+
+static void OnInputFinished(u16 *inputText, int length, bool isCanceled) {
+
+}
+
+KeyboardGameInterface * GetKeyboardGameInterface() {
+    static KeyboardGameInterface gameInterface = {
+        .Alloc = Alloc,
+        .Free = Free,
+        .OnOverlayLoaded = OnOverlayLoaded,
+        .ShouldShowKeyboard = ShouldShowKeyboard,
+        .GetMaxInputLength = GetMaxInputLength,
+        .LoadGlyph = LoadGlyph,
+        .KeycodeToChar = KeycodeToChar,
+        .CanContinueInput = CanContinueInput,
+        .OnInputFinished = OnInputFinished
+    };
+    return &gameInterface;
+}
+```
+然后在根目录运行make命令，顺利的话，应该会编译出overlay跟overlay_ldr的elf跟bin文件。  
+接着要准备打包，  
+先从example下的dragon_quest_5目录里复制一个patch.py到根目录，  
+接下来涉及到的目录跟文件路径全都是硬编码在patch.py里的，可以根据工程的实际情况修改patch.py  
+在根目录下创建一个rom目录，然后把原始rom拖进去，命名为base_rom.nds  
+如果你使用的是ndstool来打包，可按如下命令解包  
+```bash
+ndstool -x base_rom.nds -9 arm9.bin -7 arm7.bin -d nitrofs -t banner.bin -h header.bin -y9 overlay_table.bin -y overlay
+```
+接着在nitrofs里创建一个keyboard目录，将resource目录下的keys.tex复制到keyboard目录下  
+然后运行patch.py，对相关文件打补丁  
+```bash
+python patch.py
+```
+最后再用ndstool打包  
+```bash
+ndstool -c patched_rom.nds -9 arm9.bin -7 arm7.bin -d nitrofs -t banner.bin -h header.bin -y9 overlay_table.bin -y overlay
+```
+然后运行这个patched_rom.nds，  
+在确定键盘插件加载到内存后（可以在`OVERLAY_ADDR`对应的内存地址上看看有没有东西），  
+如果一切顺利在游戏里的任何地方按下R+x键即可呼出键盘。  
+这样一来，键盘插件就算初步接入了，然后就继续完善所需的接口即可。
 
 ## 逆向的一些思路
 接入键盘最复杂的还是要想办法逆向跟游戏输入系统相关的函数跟变量地址  
