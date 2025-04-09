@@ -49,5 +49,5 @@ IMPORT void OS_SleepThread(void *queue) {}
 IMPORT void TP_GetCalibratedPoint(TPData *disp, const TPData *raw) {}
 
 #if NITROSDK_VER >= MAKE_NITROSDK_VER(5, 0)
-bool OS_IsRunOnTwl();
+IMPORT bool OS_IsRunOnTwl() {}
 #endif
