@@ -15,7 +15,11 @@ class PatchUtil:
         self.codefile = rom.loadArm9()
         self.overlay_table = rom.loadArm9Overlays(rom.arm9OverlayTable)
     
-    def add_overlay_entry(self, overlay_elf_path, overlay_id, overlay_addr):
+    def add_overlay_entry(self, overlay_elf_path, overlay_id, overlay_addr, file_id = None):
+        overlay_ram_size = None
+        overlay_bss_size = None
+        init_functions_begin = None
+        init_functions_end = None
         with open(overlay_elf_path, 'rb') as f:
             overlay_elf = ELFFile(f)
             symbol_table = overlay_elf.get_section_by_name('.symtab')
@@ -30,18 +34,27 @@ class PatchUtil:
                     elif symbol.name == '__init_functions_end__':
                         init_functions_end = symbol['st_value']
         
-        if overlay_id != len(self.overlay_table):
-            while overlay_id > len(overlay_table):
-               self.overlay_table[len(overlay_table)] = ndspy.rom.code.Overlay()
+        if overlay_ram_size is None or overlay_bss_size is None or init_functions_begin is None or init_functions_end is None:
+            raise ValueError("Required symbols __ram_size__, __bss_size__, __init_functions_begin__, or __init_functions_end__ not found")
+        
+        for id in range(0, overlay_id):
+            if id not in self.overlay_table:
+                self.overlay_table[id] = ndspy.rom.code.Overlay(bytes(), 0, 0, 0, 0, 0, 0xFFFFFFFF, 0, 0)
+        
+        if file_id is None:
+            file_id = overlay_id
         self.overlay_table[overlay_id] = ndspy.rom.code.Overlay(bytes(), 
                                                                 overlay_addr, 
                                                                 overlay_ram_size, 
                                                                 overlay_bss_size, 
                                                                 init_functions_begin, 
                                                                 init_functions_end, 
-                                                                overlay_id, 0, 0)
+                                                                file_id, 0, 0)
         
     def add_overlay_as_section(self, overlay_elf_path, overlay_bin_path, overlay_addr):
+        overlay_ram_size = None
+        overlay_bss_size = None
+        
         with open(overlay_elf_path, 'rb') as f:
             overlay_elf = ELFFile(f)
             symbol_table = overlay_elf.get_section_by_name('.symtab')
@@ -51,9 +64,15 @@ class PatchUtil:
                         overlay_ram_size = symbol['st_value']
                     elif symbol.name == '__bss_size__':
                         overlay_bss_size = symbol['st_value']
+        
+        if overlay_ram_size is None or overlay_bss_size is None:
+            raise ValueError("Required symbols __ram_size__ or __bss_size__ not found")
 
         with open(overlay_bin_path, 'rb') as f:
             overlay_data = f.read()
+            if len(overlay_data) > overlay_ram_size:
+                print(f"Warning: Overlay data size ({len(overlay_data)}) exceeds RAM size ({overlay_ram_size}), truncating...")
+                overlay_data = overlay_data[:overlay_ram_size]
 
         ram_buffer = bytearray(overlay_ram_size)
         ram_buffer[:len(overlay_data)] = overlay_data
@@ -66,6 +85,7 @@ class PatchUtil:
                         
         
     def modify_overlay_init_functions(self, overlay_id, overlay_ldr_elf_path):
+        overlay_ldr_static_init_func = None
         with open(overlay_ldr_elf_path, 'rb') as f:
             overlay_ldr_elf = ELFFile(f)
             symbol_table = overlay_ldr_elf.get_section_by_name('.symtab')
@@ -73,6 +93,9 @@ class PatchUtil:
                 for symbol in symbol_table.iter_symbols():
                     if symbol.name == 'OverlayStaticInitFunc':
                         overlay_ldr_static_init_func = symbol['st_value']
+                        
+        if overlay_ldr_static_init_func is None:
+            raise ValueError("Required symbol OverlayStaticInitFunc not found")
                         
         self.overlay_table[overlay_id].staticInitStart = overlay_ldr_static_init_func
         self.overlay_table[overlay_id].staticInitEnd = overlay_ldr_static_init_func + 4
