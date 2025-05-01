@@ -62,7 +62,7 @@
 
 #define MAKE_BRANCH(src, dest) ((CALC_PC_RELATIVE_OFFSET_A(src, dest) & 0xFFFFFF) | 0xEA000000)
 #define MAKE_BRANCH_LINK(src, dest) ((CALC_PC_RELATIVE_OFFSET_A(src, dest) & 0xFFFFFF) | 0xEB000000)
-#define MAKE_BRANCH_LINK_EXCHANGE(src, dest) ((CALC_PC_RELATIVE_OFFSET_A(src, dest) & 0xFFFFFF) | (((CALC_PC_RELATIVE_OFFSET_A(src, dest) >> 1) & 1) << 24) | 0xFA000000)
+#define MAKE_BRANCH_LINK_EXCHANGE(src, dest) ((CALC_PC_RELATIVE_OFFSET_A(src, dest) & 0xFFFFFF) | (((((s32)(dest) - 8 - (s32)(src)) >> 1) & 1) << 24) | 0xFA000000)
 #define MAKE_BRANCH_T(src, dest) (((((s32)(dest) - 4 - (s32)(src)) >> 1) & 0x7FF) | 0xE000)
 #define MAKE_BARNCH_COND_T(src, dest, cond) (((((s32)(dest) - 4 - (s32)(src)) >> 1) & 0xFF) | ((cond) << 8) | 0xD000)
 #define MAKE_BRANCH_LINK_T_H(src, dest) (((((s32)(dest) - 4 - (s32)(src)) >> 12) & 0x7FF) | 0xF000)
