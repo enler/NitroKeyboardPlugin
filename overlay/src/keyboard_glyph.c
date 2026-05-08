@@ -135,6 +135,8 @@ const struct KeyGlyph gDefaultKeyGlyphs[] = {
     { KEYCODE_LEFT_BRACE, 90, 0, 6, 11 },
     { KEYCODE_RIGHT_BRACE, 96, 0, 6, 11 },
     { KEYCODE_TILDE, 0, 0, 6, 12 },
+    { KEYCODE_RIGHT_TRIANGLE, 42, 51, 11, 11 },
+    { KEYCODE_LEFT_TRIANGLE, 31, 51, 11, 11 },
     { KEYCODE_LANGUAGE_CHINISE, 6, 0, 12, 12},
     { KEYCODE_LANGUAGE_ENGLISH, 18, 0, 12, 12}
 };

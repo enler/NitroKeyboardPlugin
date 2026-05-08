@@ -195,6 +195,7 @@ static bool OnKeyDraw(const VirtualKeyboard *keyboard, const Key *key) {
     if (gPinyinInputMethod->candidateNum == 0) {
         return false;
     }
+
     int palIndex, x, y, adv;
     int index = -1;
     if (key->code >= KEYCODE_1 && key->code <= KEYCODE_9) {
@@ -217,6 +218,20 @@ static bool OnKeyDraw(const VirtualKeyboard *keyboard, const Key *key) {
             }
         }
     }
+
+    if (key->code == KEYCODE_MINUS || key->code == KEYCODE_EQUAL) {
+        KeyCode glyphCode = key->code == KEYCODE_MINUS ? KEYCODE_LEFT_TRIANGLE : KEYCODE_RIGHT_TRIANGLE;
+        glImage *glyph = GetDefaultGlyph(glyphCode);
+        if (glyph) {
+            int x = keyboard->x + key->x + (key->width + 1 - glyph->width) / 2;
+            int y = keyboard->y + key->y + keyboard->glyphBaseline - glyph->height;
+            glSetActiveTexture(glyph->textureID);
+            SetDefaultKeysPalette(keyboard->keyTexPalId);
+            glSprite(x, y, GL_FLIP_NONE, glyph);
+            return true;
+        }
+    }
+
     return false;
 }
 
