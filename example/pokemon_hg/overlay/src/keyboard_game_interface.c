@@ -184,7 +184,7 @@ static bool LoadGlyph(u16 charCode, u8 *output, int *advance) {
             output += 4;
         }
     }
-    if (charCode <= gInternalContext.header.glyphNum) {
+    if (charCode < gInternalContext.header.glyphNum) {
         FS_SeekFile(&gInternalContext.fontFile, 0x84 + gInternalContext.header.widthOffset + charCode, 0);
         FS_ReadFile(&gInternalContext.fontFile, &width, sizeof(u8));
         *advance = width;
