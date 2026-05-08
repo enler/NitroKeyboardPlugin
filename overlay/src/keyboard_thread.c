@@ -231,17 +231,16 @@ void LanucherThreadExt() {
             DrawKeyboard();
             glEnd2D();
             glFlush(0);
-            state++;
+            result = HandleKeyboardInput();
+            state = 1;
             break;
         case 1:
-            result = HandleKeyboardInput();
-            if (result == 1)
-                state = 0;
+            RequestSamplingTPData();
+            state = 0;
             break;
         default:
             break;
         }
-        RequestSamplingTPData();
         WaitVBlankIntr();
     }
 

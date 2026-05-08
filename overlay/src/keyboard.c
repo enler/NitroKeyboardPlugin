@@ -9,6 +9,8 @@
 #define KEY_BG_COLOR_PRESSED RGB15(31, 31, 31)
 #define TEXTBOX_GLYPH_COLOR RGB15(31, 31, 31)
 #define TEXTBOX_BG_COLOR RGB15(0, 86 >> 3, 179 >> 3)
+#define TEXTBOX_CURSOR_BLINK_INTERVAL 15
+#define TEXTBOX_CURSOR_COLOR TEXTBOX_GLYPH_COLOR
 
 const u8 KeyboardMap[] = {
     KEYCODE_1, KEYCODE_2, KEYCODE_3, KEYCODE_4, KEYCODE_5, KEYCODE_6, KEYCODE_7, KEYCODE_8, KEYCODE_9, KEYCODE_0, KEYCODE_MINUS, KEYCODE_EQUAL,
@@ -109,8 +111,22 @@ void InitializeKeyboard(const KeyboardGameInterface *gameInterface) {
     gVirtualKeyboard->inputTextBox.width = 240;
     gVirtualKeyboard->inputTextBox.height = 16;
     gVirtualKeyboard->inputTextBox.maxLength = gameInterface->GetMaxInputLength();
-    gVirtualKeyboard->inputTextBox.text = malloc(gameInterface->GetMaxInputLength() * sizeof(u16));
+    gVirtualKeyboard->inputTextBox.text = malloc(gVirtualKeyboard->inputTextBox.maxLength * sizeof(u16));
     gVirtualKeyboard->inputTextBox.length = 0;
+    gVirtualKeyboard->inputTextBox.cursorPosition = 0;
+    gVirtualKeyboard->inputTextBox.cursorBlinkCounter = 0;
+    if (gameInterface->GetInitialInputText) {
+        const u16 *initialText = NULL;
+        int initialLength = gameInterface->GetInitialInputText(&initialText);
+        if (initialText && initialLength > 0) {
+            if (initialLength > gVirtualKeyboard->inputTextBox.maxLength)
+                initialLength = gVirtualKeyboard->inputTextBox.maxLength;
+            for (int i = 0; i < initialLength; i++)
+                gVirtualKeyboard->inputTextBox.text[i] = initialText[i];
+            gVirtualKeyboard->inputTextBox.length = initialLength;
+            gVirtualKeyboard->inputTextBox.cursorPosition = initialLength;
+        }
+    }
 
     gVirtualKeyboard->language = KEYBOARD_LANG_CHS;
     gVirtualKeyboard->glyphBaseline = KEY_BUTTON_HEIGHT - (KEY_BUTTON_HEIGHT - 12) / 2;
@@ -145,6 +161,30 @@ static int ClampCompositionStart(const TextBox *textBox, const TextComposition *
     return composition->start;
 }
 
+static int ClampTextBoxCursorPosition(const TextBox *textBox, int cursorPosition) {
+    if (cursorPosition < 0)
+        return 0;
+    if (cursorPosition > textBox->length)
+        return textBox->length;
+    return cursorPosition;
+}
+
+static void ResetTextBoxCursorBlink(TextBox *textBox) {
+    textBox->cursorBlinkCounter = 0;
+}
+
+static bool GetActiveComposition(VirtualKeyboard *keyboard, TextComposition *composition, int *compositionStart) {
+    KeyboardInputMethodInterface *inputMethodInterface = keyboard->inputMethodInterface[keyboard->language];
+    memset(composition, 0, sizeof(TextComposition));
+    bool hasComposition = inputMethodInterface &&
+                          inputMethodInterface->GetComposition &&
+                          inputMethodInterface->GetComposition(keyboard, composition) &&
+                          composition->text &&
+                          composition->length > 0;
+    *compositionStart = hasComposition ? ClampCompositionStart(&keyboard->inputTextBox, composition) : 0;
+    return hasComposition;
+}
+
 static bool GetTextBoxDisplayChar(const TextBox *textBox,
                                   const TextComposition *composition,
                                   bool hasComposition,
@@ -170,6 +210,43 @@ static bool GetTextBoxDisplayChar(const TextBox *textBox,
     *useDefaultGlyph = false;
     *underline = false;
     return true;
+}
+
+static int GetTextBoxDisplayLength(const TextBox *textBox,
+                                   const TextComposition *composition,
+                                   bool hasComposition) {
+    return textBox->length + (hasComposition ? composition->length : 0);
+}
+
+static int GetTextBoxCursorDisplayIndex(const TextBox *textBox,
+                                        const TextComposition *composition,
+                                        bool hasComposition,
+                                        int compositionStart) {
+    int cursorPosition = ClampTextBoxCursorPosition(textBox, textBox->cursorPosition);
+    if (!hasComposition || cursorPosition < compositionStart)
+        return cursorPosition;
+    return cursorPosition + composition->length;
+}
+
+static int GetTextBoxCursorPositionFromDisplayIndex(const TextBox *textBox,
+                                                    const TextComposition *composition,
+                                                    bool hasComposition,
+                                                    int compositionStart,
+                                                    int displayIndex) {
+    int displayLength = GetTextBoxDisplayLength(textBox, composition, hasComposition);
+    if (displayIndex < 0)
+        displayIndex = 0;
+    if (displayIndex > displayLength)
+        displayIndex = displayLength;
+
+    if (!hasComposition)
+        return ClampTextBoxCursorPosition(textBox, displayIndex);
+
+    if (displayIndex <= compositionStart)
+        return ClampTextBoxCursorPosition(textBox, displayIndex);
+    if (displayIndex <= compositionStart + composition->length)
+        return compositionStart;
+    return ClampTextBoxCursorPosition(textBox, displayIndex - composition->length);
 }
 
 static bool MeasureTextBoxChar(u16 charCode, bool useDefaultGlyph, int *advance) {
@@ -212,33 +289,29 @@ static void DrawTextBoxChar(VirtualKeyboard *keyboard,
 }
 
 void DrawInputTextBox() {
-    KeyboardInputMethodInterface *inputMethodInterface = gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
-    TextBox textBox = gVirtualKeyboard->inputTextBox;
+    TextBox *textBox = &gVirtualKeyboard->inputTextBox;
     TextComposition composition;
-    memset(&composition, 0, sizeof(TextComposition));
-    bool hasComposition = inputMethodInterface &&
-                          inputMethodInterface->GetComposition &&
-                          inputMethodInterface->GetComposition(gVirtualKeyboard, &composition) &&
-                          composition.text &&
-                          composition.length > 0;
-    int compositionStart = hasComposition ? ClampCompositionStart(&textBox, &composition) : 0;
-    int displayLength = textBox.length + (hasComposition ? composition.length : 0);
+    int compositionStart;
+    bool hasComposition = GetActiveComposition(gVirtualKeyboard, &composition, &compositionStart);
+    int displayLength = GetTextBoxDisplayLength(textBox, &composition, hasComposition);
+    int cursorDisplayIndex = GetTextBoxCursorDisplayIndex(textBox, &composition, hasComposition, compositionStart);
 
-    glBoxFilled(textBox.x, textBox.y, textBox.x + textBox.width - 1, textBox.y + textBox.height - 1, TEXTBOX_BG_COLOR);
+    glBoxFilled(textBox->x, textBox->y, textBox->x + textBox->width - 1, textBox->y + textBox->height - 1, TEXTBOX_BG_COLOR);
     SetDefaultKeysPalette(gVirtualKeyboard->glyphTexPalId);
 
     int drawFrom = 0;
     int width = 0;
+    int cursorX = 0;
     u16 charCode;
     bool useDefaultGlyph;
     bool underline;
     int advance;
 
-    for (int i = displayLength - 1; i >= 0; i--) {
-        if (GetTextBoxDisplayChar(&textBox, &composition, hasComposition, compositionStart, i, &charCode, &useDefaultGlyph, &underline) &&
+    for (int i = cursorDisplayIndex - 1; i >= 0; i--) {
+        if (GetTextBoxDisplayChar(textBox, &composition, hasComposition, compositionStart, i, &charCode, &useDefaultGlyph, &underline) &&
             MeasureTextBoxChar(charCode, useDefaultGlyph, &advance)) {
             width += advance;
-            if (width > textBox.width) {
+            if (width > textBox->width - 1) {
                 drawFrom = i + 1;
                 break;
             }
@@ -248,16 +321,37 @@ void DrawInputTextBox() {
     width = 0;
 
     for (int i = drawFrom; i < displayLength; i++) {
-        if (GetTextBoxDisplayChar(&textBox, &composition, hasComposition, compositionStart, i, &charCode, &useDefaultGlyph, &underline) &&
+        if (i == cursorDisplayIndex)
+            cursorX = width;
+
+        if (GetTextBoxDisplayChar(textBox, &composition, hasComposition, compositionStart, i, &charCode, &useDefaultGlyph, &underline) &&
             MeasureTextBoxChar(charCode, useDefaultGlyph, &advance)) {
+            if (width + advance > textBox->width)
+                break;
+
             if (underline) {
-                int underlineY = textBox.y + textBox.height - 1;
-                glLine(textBox.x + width, underlineY, textBox.x + width + advance - 1, underlineY, RGB15(0, 31, 0));
+                int underlineY = textBox->y + textBox->height - 1;
+                glLine(textBox->x + width, underlineY, textBox->x + width + advance - 1, underlineY, RGB15(0, 31, 0));
             }
-            DrawTextBoxChar(gVirtualKeyboard, &textBox, charCode, useDefaultGlyph, width);
+            DrawTextBoxChar(gVirtualKeyboard, textBox, charCode, useDefaultGlyph, width);
             width += advance;
         }
     }
+
+    if (cursorDisplayIndex >= displayLength)
+        cursorX = width;
+    if (cursorX >= textBox->width)
+        cursorX = textBox->width - 1;
+    int cursorDrawX = cursorX > 0 ? cursorX - 1 : 0;
+
+    if ((textBox->cursorBlinkCounter / TEXTBOX_CURSOR_BLINK_INTERVAL) == 0) {
+        int x = textBox->x + cursorDrawX;
+        glLine(x, textBox->y, x, textBox->y + textBox->height - 1, TEXTBOX_CURSOR_COLOR);
+    }
+
+    textBox->cursorBlinkCounter++;
+    if (textBox->cursorBlinkCounter >= TEXTBOX_CURSOR_BLINK_INTERVAL * 2)
+        textBox->cursorBlinkCounter = 0;
 }
 
 void DrawKey(Key *key) {
@@ -313,7 +407,15 @@ void TryAddCharToInput(u16 charCode) {
     if (textBox->length >= textBox->maxLength)
         return;
     if (!gameInterface || !gameInterface->CanContinueInput || gameInterface->CanContinueInput(textBox->text, textBox->length, charCode)) {
-            textBox->text[textBox->length++] = charCode;
+        int insertPosition = ClampTextBoxCursorPosition(textBox, textBox->cursorPosition);
+        if (insertPosition < textBox->length) {
+            for (int i = textBox->length; i > insertPosition; i--)
+                textBox->text[i] = textBox->text[i - 1];
+        }
+        textBox->text[insertPosition] = charCode;
+        textBox->length++;
+        textBox->cursorPosition = insertPosition + 1;
+        ResetTextBoxCursorBlink(textBox);
     }
 }
 
@@ -326,6 +428,84 @@ void TryAddKeycodeToInput(KeyCode keyCode) {
     if (!gameInterface || !gameInterface->KeycodeToChar || gameInterface->KeycodeToChar(keyCode, &charCode)) {
         TryAddCharToInput(charCode);
     }
+}
+
+static int GetTextBoxDrawFromForCursor(const TextBox *textBox,
+                                       const TextComposition *composition,
+                                       bool hasComposition,
+                                       int compositionStart,
+                                       int cursorDisplayIndex) {
+    int drawFrom = 0;
+    int width = 0;
+    u16 charCode;
+    bool useDefaultGlyph;
+    bool underline;
+    int advance;
+
+    for (int i = cursorDisplayIndex - 1; i >= 0; i--) {
+        if (GetTextBoxDisplayChar(textBox, composition, hasComposition, compositionStart, i, &charCode, &useDefaultGlyph, &underline) &&
+            MeasureTextBoxChar(charCode, useDefaultGlyph, &advance)) {
+            width += advance;
+            if (width > textBox->width - 1) {
+                drawFrom = i + 1;
+                break;
+            }
+        }
+    }
+    return drawFrom;
+}
+
+static int ProcessTextBoxTouch(int x, int y) {
+    TextBox *textBox = &gVirtualKeyboard->inputTextBox;
+    if (x < textBox->x || x >= textBox->x + textBox->width ||
+        y < textBox->y || y >= textBox->y + textBox->height) {
+        return KEY_STATE_NOT_PRESSED;
+    }
+
+    if (gVirtualKeyboard->currentKey) {
+        gVirtualKeyboard->currentKey->isPressed = false;
+        gVirtualKeyboard->currentKey->isHeld = false;
+        gVirtualKeyboard->currentKey = NULL;
+    }
+
+    if (gVirtualKeyboard->isPressed)
+        return KEY_STATE_HELD;
+
+    TextComposition composition;
+    int compositionStart;
+    bool hasComposition = GetActiveComposition(gVirtualKeyboard, &composition, &compositionStart);
+    int displayLength = GetTextBoxDisplayLength(textBox, &composition, hasComposition);
+    int cursorDisplayIndex = GetTextBoxCursorDisplayIndex(textBox, &composition, hasComposition, compositionStart);
+    int drawFrom = GetTextBoxDrawFromForCursor(textBox, &composition, hasComposition, compositionStart, cursorDisplayIndex);
+    int localX = x - textBox->x;
+    int width = 0;
+    int targetDisplayIndex = drawFrom;
+    u16 charCode;
+    bool useDefaultGlyph;
+    bool underline;
+    int advance;
+
+    for (int i = drawFrom; i < displayLength; i++) {
+        if (GetTextBoxDisplayChar(textBox, &composition, hasComposition, compositionStart, i, &charCode, &useDefaultGlyph, &underline) &&
+            MeasureTextBoxChar(charCode, useDefaultGlyph, &advance)) {
+            if (width + advance > textBox->width)
+                break;
+            if (localX < width + advance / 2) {
+                targetDisplayIndex = i;
+                break;
+            }
+            targetDisplayIndex = i + 1;
+            width += advance;
+        }
+    }
+
+    textBox->cursorPosition = GetTextBoxCursorPositionFromDisplayIndex(textBox,
+                                                                       &composition,
+                                                                       hasComposition,
+                                                                       compositionStart,
+                                                                       targetDisplayIndex);
+    ResetTextBoxCursorBlink(textBox);
+    return KEY_STATE_PRESSED;
 }
 
 void ProcessKey(Key *key, int x, int y, int *result, KeyboardInputMethodInterface *inputMethodInterface) {
@@ -360,12 +540,20 @@ void ProcessKey(Key *key, int x, int y, int *result, KeyboardInputMethodInterfac
             }
             else if (key->code == KEYCODE_BACKSPACE) {
                 TextBox *textBox = &gVirtualKeyboard->inputTextBox;
-                if (textBox->length > 0)
+                textBox->cursorPosition = ClampTextBoxCursorPosition(textBox, textBox->cursorPosition);
+                if (textBox->cursorPosition > 0)
                 {
-                    textBox->text[textBox->length - 1] = 0;
+                    int deletePosition = textBox->cursorPosition - 1;
+                    if (deletePosition < textBox->length - 1) {
+                        for (int i = deletePosition; i < textBox->length - 1; i++)
+                            textBox->text[i] = textBox->text[i + 1];
+                    }
                     textBox->length--;
+                    textBox->cursorPosition = deletePosition;
+                    textBox->text[textBox->length] = 0;
+                    ResetTextBoxCursorBlink(textBox);
                 }
-                else
+                else if (textBox->length == 0)
                 {
                     *result |= KEY_STATE_EXIT;
                 }
@@ -406,6 +594,10 @@ void ProcessKey(Key *key, int x, int y, int *result, KeyboardInputMethodInterfac
 int ProcessKeyTouch(int x, int y) {
     int result = KEY_STATE_NOT_PRESSED;
     KeyboardInputMethodInterface *inputMethodInterface = gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
+
+    result = ProcessTextBoxTouch(x, y);
+    if (result != KEY_STATE_NOT_PRESSED)
+        return result;
 
     for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->normalKeys) && result == KEY_STATE_NOT_PRESSED; i++) {
         ProcessKey(&gVirtualKeyboard->normalKeys[i], x, y, &result, inputMethodInterface);

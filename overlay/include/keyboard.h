@@ -262,6 +262,8 @@ typedef struct {
     u16 *text;
     int maxLength;
     int length;
+    int cursorPosition;
+    int cursorBlinkCounter;
 } TextBox;
 
 typedef struct {
@@ -285,6 +287,7 @@ typedef struct {
     void (*OnOverlayLoaded)();
     bool (*ShouldShowKeyboard)();
     int (*GetMaxInputLength)();
+    int (*GetInitialInputText)(const u16 **inputText);
     bool (*LoadGlyph)(u16 charCode, u8 *output, int *advance);
     bool (*KeycodeToChar)(u16 keycode, u16 *output);
     bool (*CanContinueInput)(u16 *inputText, int length, u16 nextChar);

@@ -150,6 +150,16 @@ static int GetMaxInputLength() {
     return 5;
 }
 
+static int GetInitialInputText(const u16 **inputText) {
+    u8 *namingContext = (u8 *)gInternalContext.namingContextAlt;
+    if (!namingContext)
+        return 0;
+    u16 *name = (u16*)(namingContext + 216);
+    u16 *nameLength = (u16*)(namingContext + 344);
+    *inputText = name;
+    return *nameLength;
+}
+
 u32 Reverse2bitUnits(u32 pixelData) {
     u32 result = 0;
     for (int i = 0; i < 16; ++i) {
@@ -252,6 +262,7 @@ KeyboardGameInterface * GetKeyboardGameInterface() {
         .OnOverlayLoaded = OnOverlayLoaded,
         .ShouldShowKeyboard = ShouldShowKeyboard,
         .GetMaxInputLength = GetMaxInputLength,
+        .GetInitialInputText = GetInitialInputText,
         .LoadGlyph = LoadGlyph,
         .KeycodeToChar = KeycodeToChar,
         .CanContinueInput = CanContinueInput,

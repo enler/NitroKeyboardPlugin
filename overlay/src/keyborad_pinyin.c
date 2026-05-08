@@ -231,7 +231,7 @@ static bool GetComposition(VirtualKeyboard *keyboard, TextComposition *compositi
 
     composition->text = gPinyinInputMethod->compositionText;
     composition->length = gPinyinInputMethod->inputLetterNum;
-    composition->start = keyboard->inputTextBox.length;
+    composition->start = keyboard->inputTextBox.cursorPosition;
     composition->useDefaultGlyph = true;
     composition->underline = true;
     return true;

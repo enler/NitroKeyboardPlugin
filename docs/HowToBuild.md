@@ -256,6 +256,7 @@ KeyboardGameInterface * GetKeyboardGameInterface() {
         .OnOverlayLoaded = OnOverlayLoaded,
         .ShouldShowKeyboard = ShouldShowKeyboard,
         .GetMaxInputLength = GetMaxInputLength,
+        .GetInitialInputText = NULL,
         .LoadGlyph = LoadGlyph,
         .KeycodeToChar = KeycodeToChar,
         .CanContinueInput = CanContinueInput,
@@ -264,7 +265,7 @@ KeyboardGameInterface * GetKeyboardGameInterface() {
     return &gameInterface;
 }
 ```  
-这就是用户需要进行适配的接口了，一共有9个函数，键盘插件会根据情况调用这些接口。  
+这就是用户需要进行适配的接口了，一共有10个函数，键盘插件会根据情况调用这些接口。  
 
 首先是  
 ```c
@@ -322,11 +323,22 @@ int GetMaxInputLength();
 比如宝可梦心金，在给宝可梦取名是5个字符，在给电脑的盒子重命名的时候，  
 最多可以输入8个字符，所以一般来说，还是间接获取更好。  
 
+如果需要让键盘弹出时带上已有内容，可以实现这个可选接口  
+```c
+int GetInitialInputText(const u16 **inputText);
+```  
+这个函数返回初始文本的字符数，并通过inputText返回初始文本指针。  
+键盘插件只会按照返回的字符数复制内容，不会假定字符串有终止符。  
+如果这个接口指针为NULL，或者函数返回的文本指针为NULL，就视为没有初始字符串。  
+返回长度超过GetMaxInputLength时，键盘插件会截断到最大可输入字符数。  
+
 重头戏来了  
 ```c
 bool LoadGlyph(u16 charCode, u8 *output, int *advance)
 ```  
 这个函数用于获取字模，获取成功后返回true，获取后的字模存入output里，字符间距存入advance里，也可以存宽度，但最好存间距  
+注意advance对应的是字符占用的显示宽度，键盘插件的插入光标会画在前一个字符advance区域的最后一像素上。  
+因此字模右侧最好保留至少1像素空白，并把这个空白计入advance，否则光标可能会盖住字符最右侧的有效像素。  
 存入output里的字模格式必须为16x16 2bpp低位在前的格式，不确定的话，可以看看ct2的vb2bpp  
 几个示例里，这个函数的实现都不完全一样  
 宝可梦心金是直接读取rom中游戏自身的字库文件，然后转换  
@@ -465,6 +477,7 @@ KeyboardGameInterface * GetKeyboardGameInterface() {
         .OnOverlayLoaded = OnOverlayLoaded,
         .ShouldShowKeyboard = ShouldShowKeyboard,
         .GetMaxInputLength = GetMaxInputLength,
+        .GetInitialInputText = NULL,
         .LoadGlyph = LoadGlyph,
         .KeycodeToChar = KeycodeToChar,
         .CanContinueInput = CanContinueInput,
