@@ -24,6 +24,7 @@ typedef struct {
     PinyinTableEntry *entries;
     FSFile file;
     u8 inputLetter[6];
+    u16 compositionText[6];
     int inputLetterNum;
     u16 *candidate;
     int candidateNum;
@@ -35,7 +36,7 @@ PinyinInputMethod *gPinyinInputMethod;
 
 static bool OnKeyPressed(VirtualKeyboard *keyboard, Key *key);
 static bool OnKeyDraw(const VirtualKeyboard *keyboard, const Key *key);
-static bool OnInputStringDraw(struct VirtualKeyboard *keyboard, TextBox *textBox);
+static bool GetComposition(VirtualKeyboard *keyboard, TextComposition *composition);
 
 KeyboardInputMethodInterface * GetPinyinInputMethodInterface() {
     if (!gPinyinInputMethod)
@@ -52,7 +53,7 @@ void InitPinyinInputMethod() {
     memset(gPinyinInputMethod, 0, sizeof(PinyinInputMethod));
     gPinyinInputMethod->interface.OnKeyPressed = OnKeyPressed;
     gPinyinInputMethod->interface.OnKeyDraw = OnKeyDraw;
-    gPinyinInputMethod->interface.OnInputStringDraw = OnInputStringDraw;
+    gPinyinInputMethod->interface.GetComposition = GetComposition;
     FS_InitFile(&gPinyinInputMethod->file);
     if(FS_OpenFile(&gPinyinInputMethod->file, "/keyboard/pinyin_table.bin")) {
         FS_ReadFile(&gPinyinInputMethod->file, &gPinyinInputMethod->header, sizeof(PinyinTableHeader));
@@ -219,50 +220,19 @@ static bool OnKeyDraw(const VirtualKeyboard *keyboard, const Key *key) {
     return false;
 }
 
-static bool OnInputStringDraw(VirtualKeyboard *keyboard, TextBox *textBox) {
+static bool GetComposition(VirtualKeyboard *keyboard, TextComposition *composition) {
     if (gPinyinInputMethod->inputLetterNum == 0) {
         return false;
     }
-    int inputStringWidth = 0;
-    int inputLettersWidth = 0;
-    glImage glyph;
-    int palIndex, adv;
-    int x = 0;
 
     for (int i = 0; i < gPinyinInputMethod->inputLetterNum; i++) {
-        glImage *defaultGlyph = GetDefaultGlyph(gPinyinInputMethod->inputLetter[i]);
-        if (defaultGlyph) {
-            inputLettersWidth += defaultGlyph->width;
-            inputLettersWidth++;
-        }
+        gPinyinInputMethod->compositionText[i] = gPinyinInputMethod->inputLetter[i];
     }
 
-    for (int i = textBox->length - 1; i >= 0; i--) {
-        if (GetExternalGlyph(textBox->text[i], &glyph, &palIndex, &adv)) {
-            inputStringWidth += adv;
-            if (inputStringWidth + inputLettersWidth > textBox->width) {
-                break;
-            }
-        }
-    }
-
-    x = inputStringWidth;
-
-    glLine(x + textBox->x,
-           textBox->y + keyboard->glyphBaseline,
-           x + inputLettersWidth + textBox->x - 1,
-           textBox->y + keyboard->glyphBaseline,
-           RGB15(0, 31, 0));
-
-    for (int i = 0; i < gPinyinInputMethod->inputLetterNum; i++) {
-        glImage *defaultGlyph = GetDefaultGlyph(gPinyinInputMethod->inputLetter[i]);
-        if (defaultGlyph) {
-            glSetActiveTexture(defaultGlyph->textureID);
-            SetDefaultKeysPalette(keyboard->glyphTexPalId);
-            glSprite(textBox->x + x, textBox->y + keyboard->glyphBaseline - defaultGlyph->height, GL_FLIP_NONE, defaultGlyph);
-            x += defaultGlyph->width;
-            x++;
-        }
-    }
-    return false;
+    composition->text = gPinyinInputMethod->compositionText;
+    composition->length = gPinyinInputMethod->inputLetterNum;
+    composition->start = keyboard->inputTextBox.length;
+    composition->useDefaultGlyph = true;
+    composition->underline = true;
+    return true;
 }

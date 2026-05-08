@@ -137,21 +137,106 @@ void FinalizeKeyboard(bool isCancelled) {
     gVirtualKeyboard = NULL;
 }
 
-void DrawInputTextBox() {
-    KeyboardInputMethodInterface *inputMethodInterface = gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
-    TextBox textBox = gVirtualKeyboard->inputTextBox;
-    glBoxFilled(textBox.x, textBox.y, textBox.x + textBox.width - 1, textBox.y + textBox.height - 1, TEXTBOX_BG_COLOR);
-    if (inputMethodInterface && inputMethodInterface[gVirtualKeyboard->language].OnInputStringDraw(gVirtualKeyboard, &textBox)) {
+static int ClampCompositionStart(const TextBox *textBox, const TextComposition *composition) {
+    if (composition->start < 0)
+        return 0;
+    if (composition->start > textBox->length)
+        return textBox->length;
+    return composition->start;
+}
+
+static bool GetTextBoxDisplayChar(const TextBox *textBox,
+                                  const TextComposition *composition,
+                                  bool hasComposition,
+                                  int compositionStart,
+                                  int index,
+                                  u16 *charCode,
+                                  bool *useDefaultGlyph,
+                                  bool *underline) {
+    if (hasComposition && index >= compositionStart && index < compositionStart + composition->length) {
+        *charCode = composition->text[index - compositionStart];
+        *useDefaultGlyph = composition->useDefaultGlyph;
+        *underline = composition->underline;
+        return true;
+    }
+
+    int textIndex = index;
+    if (hasComposition && index >= compositionStart + composition->length)
+        textIndex -= composition->length;
+    if (textIndex < 0 || textIndex >= textBox->length)
+        return false;
+
+    *charCode = textBox->text[textIndex];
+    *useDefaultGlyph = false;
+    *underline = false;
+    return true;
+}
+
+static bool MeasureTextBoxChar(u16 charCode, bool useDefaultGlyph, int *advance) {
+    if (useDefaultGlyph) {
+        glImage *glyph = GetDefaultGlyph(charCode);
+        if (!glyph)
+            return false;
+        *advance = glyph->width + 1;
+        return true;
+    }
+
+    glImage glyph;
+    int palIndex;
+    return GetExternalGlyph(charCode, &glyph, &palIndex, advance);
+}
+
+static void DrawTextBoxChar(VirtualKeyboard *keyboard,
+                            const TextBox *textBox,
+                            u16 charCode,
+                            bool useDefaultGlyph,
+                            int x) {
+    if (useDefaultGlyph) {
+        glImage *glyph = GetDefaultGlyph(charCode);
+        if (!glyph)
+            return;
+        glSetActiveTexture(glyph->textureID);
+        SetDefaultKeysPalette(keyboard->glyphTexPalId);
+        glSprite(textBox->x + x, textBox->y + keyboard->glyphBaseline - glyph->height, GL_FLIP_NONE, glyph);
         return;
     }
-    SetDefaultKeysPalette(gVirtualKeyboard->glyphTexPalId);
-    int drawFrom = 0;
-    int width = 0;
+
     glImage glyph;
     int palIndex;
     int advance;
-    for (int i = textBox.length - 1; i >= 0; i--) {
-        if (GetExternalGlyph(textBox.text[i], &glyph, &palIndex, &advance)) {
+    if (GetExternalGlyph(charCode, &glyph, &palIndex, &advance)) {
+        glSetActiveTexture(glyph.textureID);
+        glAssignColorTable(0, keyboard->externalGlyphTextBoxPalIds[palIndex]);
+        glSprite(textBox->x + x, textBox->y + (textBox->height - glyph.height) / 2, GL_FLIP_NONE, &glyph);
+    }
+}
+
+void DrawInputTextBox() {
+    KeyboardInputMethodInterface *inputMethodInterface = gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
+    TextBox textBox = gVirtualKeyboard->inputTextBox;
+    TextComposition composition;
+    memset(&composition, 0, sizeof(TextComposition));
+    bool hasComposition = inputMethodInterface &&
+                          inputMethodInterface->GetComposition &&
+                          inputMethodInterface->GetComposition(gVirtualKeyboard, &composition) &&
+                          composition.text &&
+                          composition.length > 0;
+    int compositionStart = hasComposition ? ClampCompositionStart(&textBox, &composition) : 0;
+    int displayLength = textBox.length + (hasComposition ? composition.length : 0);
+
+    glBoxFilled(textBox.x, textBox.y, textBox.x + textBox.width - 1, textBox.y + textBox.height - 1, TEXTBOX_BG_COLOR);
+    SetDefaultKeysPalette(gVirtualKeyboard->glyphTexPalId);
+
+    int drawFrom = 0;
+    int width = 0;
+    u16 charCode;
+    bool useDefaultGlyph;
+    bool underline;
+    int advance;
+
+    for (int i = displayLength - 1; i >= 0; i--) {
+        if (GetTextBoxDisplayChar(&textBox, &composition, hasComposition, compositionStart, i, &charCode, &useDefaultGlyph, &underline) &&
+            MeasureTextBoxChar(charCode, useDefaultGlyph, &advance)) {
             width += advance;
             if (width > textBox.width) {
                 drawFrom = i + 1;
@@ -162,11 +247,14 @@ void DrawInputTextBox() {
 
     width = 0;
 
-    for (int i = drawFrom; i < textBox.length; i++) {
-        if (GetExternalGlyph(textBox.text[i], &glyph, &palIndex, &advance)) {
-            glSetActiveTexture(glyph.textureID);
-            glAssignColorTable(0, gVirtualKeyboard->externalGlyphTextBoxPalIds[palIndex]);
-            glSprite(textBox.x + width, textBox.y + (textBox.height - glyph.height) / 2, GL_FLIP_NONE, &glyph);
+    for (int i = drawFrom; i < displayLength; i++) {
+        if (GetTextBoxDisplayChar(&textBox, &composition, hasComposition, compositionStart, i, &charCode, &useDefaultGlyph, &underline) &&
+            MeasureTextBoxChar(charCode, useDefaultGlyph, &advance)) {
+            if (underline) {
+                int underlineY = textBox.y + textBox.height - 1;
+                glLine(textBox.x + width, underlineY, textBox.x + width + advance - 1, underlineY, RGB15(0, 31, 0));
+            }
+            DrawTextBoxChar(gVirtualKeyboard, &textBox, charCode, useDefaultGlyph, width);
             width += advance;
         }
     }

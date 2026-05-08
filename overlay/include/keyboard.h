@@ -265,6 +265,14 @@ typedef struct {
 } TextBox;
 
 typedef struct {
+    const u16 *text;
+    int length;
+    int start;
+    bool useDefaultGlyph;
+    bool underline;
+} TextComposition;
+
+typedef struct {
     u16 keyCode;
     u16 charCode;
 } KeycodeConvItem;
@@ -286,7 +294,7 @@ typedef struct {
 typedef struct {
     bool (*OnKeyPressed)(VirtualKeyboard *keyboard, Key *key);
     bool (*OnKeyDraw)(const VirtualKeyboard *keyboard, const Key *key);
-    bool (*OnInputStringDraw)(VirtualKeyboard *keyboard, TextBox *textBox);
+    bool (*GetComposition)(VirtualKeyboard *keyboard, TextComposition *composition);
 } KeyboardInputMethodInterface;
 
 typedef struct VirtualKeyboard {
