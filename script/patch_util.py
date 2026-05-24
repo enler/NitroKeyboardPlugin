@@ -82,6 +82,32 @@ class PatchUtil:
             ramAddress=overlay_addr,
             bssSize=overlay_bss_size
         ))
+
+    def add_bss_as_autoload_section(self, elf_path):
+        bss_start = None
+        bss_size = None
+
+        with open(elf_path, 'rb') as f:
+            elf = ELFFile(f)
+            symbol_table = elf.get_section_by_name('.symtab')
+            if symbol_table:
+                for symbol in symbol_table.iter_symbols():
+                    if symbol.name == '__bss_start__':
+                        bss_start = symbol['st_value']
+                    elif symbol.name == '__bss_size__':
+                        bss_size = symbol['st_value']
+
+        if bss_start is None or bss_size is None:
+            raise ValueError("Required symbols __bss_start__ or __bss_size__ not found")
+
+        if bss_size == 0:
+            return
+
+        self.codefile.sections.append(ndspy.code.MainCodeFile.Section(
+            data=bytes(),
+            ramAddress=bss_start,
+            bssSize=bss_size
+        ))
                         
         
     def modify_overlay_init_functions(self, overlay_id, overlay_ldr_elf_path):

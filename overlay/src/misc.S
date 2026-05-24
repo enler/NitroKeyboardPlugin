@@ -26,12 +26,5 @@ MpuGetDTCMRegion:
     mov r0, r0, lsl #12
     bx lr
 
-.section .rodata
-    .align 2
-    .global nitrocode
-nitrocode:
-    .word 0xDEC00621
-    .word 0x2106C0DE
-
-.section .init_functions, "a", %progbits
+.section .init_functions
     .word OverlayInit

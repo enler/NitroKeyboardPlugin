@@ -20,9 +20,13 @@ SECTIONS
         }
         . = ALIGN(4);
         
+        __bss_start__ = .;
         .bss : { 
             *src/*.o(.bss*)
         }
+        . = ALIGN(4);
+        __bss_end__ = .;
+        __bss_size__ = __bss_end__ - __bss_start__;
 
 
 
