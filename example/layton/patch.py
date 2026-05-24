@@ -81,6 +81,7 @@ if __name__ == '__main__':
     patch_util = PatchUtil(base_rom_path)
     patch_util.add_overlay_entry(overlay_elf, overlay_id, overlay_addr)
     patch_util.modify_arena_lo(overlay_elf, overlay_addr)
+    patch_util.add_bss_as_autoload_section(overlay_ldr_elf)
     patch_util.save_arm9_binary(os.path.join('rom','arm9.bin'))
     patch_util.save_overlay_table(os.path.join('rom','overlay_table.bin'))
     

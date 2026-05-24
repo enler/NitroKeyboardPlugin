@@ -47,6 +47,7 @@ if __name__ == '__main__':
     patch_util.modify_arena_lo(overlay_elf, overlay_addr)
     patch_util.modify_arena_lo(overlay_elf, overlay_addr, patch_twl=True)
     patch_util.inject_overlay_ldr(overlay_ldr_bin, overlay_ldr_addr)
+    patch_util.add_bss_as_autoload_section(overlay_ldr_elf)
     patch_util.patch_word(0x0200C538, overlay_id + 1)
     patch_util.save_arm9_binary(os.path.join('rom','arm9.bin'))
     patch_util.save_overlay_table(os.path.join('rom','overlay_table.bin'))
