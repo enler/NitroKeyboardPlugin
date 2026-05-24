@@ -90,15 +90,13 @@ void free(void* ptr) {
 }
 
 void *calloc(u32 nmemb, u32 size) {
-    if (nmemb != 0 && size > UINT32_MAX / nmemb) {
+    u32 total_size = (nmemb != 0 && size != 0 && nmemb <= (u32)(~0U) / size)
+                     ? nmemb * size : 0;
+    if (total_size == 0)
         return NULL;
-    }
-    
-    u32 total_size = nmemb * size;
     void* ptr = malloc(total_size);
-    if (ptr) {
+    if (ptr)
         memset(ptr, 0, total_size);
-    }
     return ptr;
 }
 
@@ -135,7 +133,8 @@ void *realloc(void *ptr, u32 size) {
 
     void* new_ptr = malloc(size);
     if (new_ptr) {
-        memcpy(new_ptr, ptr, block->size);
+        u32 copy_size = block->size < size ? block->size : size;
+        memcpy(new_ptr, ptr, copy_size);
         free(ptr);
     }
     return new_ptr;
