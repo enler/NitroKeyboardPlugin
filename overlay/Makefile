@@ -5,6 +5,7 @@ include ../common/common.mk
 OUTPUT     := $(OVERLAY_NAME)
 OUTPUT_ELF := ../$(OUTPUT).elf
 OUTPUT_BIN := ../$(OUTPUT).bin
+OVERLAY_EXPORTS_LD := $(OBJ_DIR)/overlay_exports.ld
 
 INC_DIRS := include $(COMMON_INC_DIRS)
 
@@ -28,7 +29,7 @@ $(shell mkdir -p $(sort $(dir $(ALL_OBJS))))
 
 .PHONY: all clean
 
-all: $(OUTPUT_BIN)
+all: $(OUTPUT_BIN) $(OVERLAY_EXPORTS_LD)
 	@:
 
 -include $(DEPS)
@@ -44,6 +45,9 @@ $(OUTPUT_ELF): $(OBJS) $(NITRO_LIB)
 
 $(OUTPUT_BIN): $(OUTPUT_ELF)
 	$(OBJCOPY) --set-section-flags .init_functions=alloc,load,contents -O binary $< $@
+
+$(OVERLAY_EXPORTS_LD): $(OUTPUT_ELF)
+	$(OBJDUMP) -t $< | awk '$$NF == "nitrocode" { print "nitrocode = 0x" $$1 ";"; found = 1 } END { exit !found }' > $@
 
 clean:
 	rm -rf $(OBJ_DIR)
