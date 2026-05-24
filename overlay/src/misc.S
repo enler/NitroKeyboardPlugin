@@ -26,5 +26,5 @@ MpuGetDTCMRegion:
     mov r0, r0, lsl #12
     bx lr
 
-.section .init_functions
+.section .init_functions, "a", %progbits
     .word OverlayInit
