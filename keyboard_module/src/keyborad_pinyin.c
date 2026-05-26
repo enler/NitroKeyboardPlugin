@@ -1,0 +1,253 @@
+#include <nds/ndstypes.h>
+#include <stdlib.h>
+#include "nitro/fs.h"
+#include "keyboard.h"
+
+#define MAX_INPUT_LETTER_NUM 6
+#define MAX_CANDIDATE_NUM 10
+
+typedef struct {
+    u32 pinyinNum;
+    u32 candidateOffset;
+    u32 maxCandidateNum;
+    u32 reserved;
+} PinyinTableHeader;
+
+typedef struct {
+    u32 pinyin;
+    u16 candidateOffset;
+    u16 candidateNum;
+} PinyinTableEntry;
+
+typedef struct {
+    PinyinTableHeader header;
+    PinyinTableEntry *entries;
+    FSFile file;
+    u8 inputLetter[6];
+    u16 compositionText[6];
+    int inputLetterNum;
+    u16 *candidate;
+    int candidateNum;
+    int candidateOffset;
+    KeyboardInputMethodInterface interface;
+} PinyinInputMethod;
+
+PinyinInputMethod *gPinyinInputMethod;
+
+static bool OnKeyPressed(VirtualKeyboard *keyboard, Key *key);
+static bool OnKeyDraw(const VirtualKeyboard *keyboard, const Key *key);
+static bool GetComposition(VirtualKeyboard *keyboard, TextComposition *composition);
+
+KeyboardInputMethodInterface * GetPinyinInputMethodInterface() {
+    if (!gPinyinInputMethod)
+        return NULL;
+    else 
+        return &gPinyinInputMethod->interface;
+}
+
+void InitPinyinInputMethod() {
+    gPinyinInputMethod = malloc(sizeof(PinyinInputMethod));
+    if (!gPinyinInputMethod) {
+        return;
+    }
+    memset(gPinyinInputMethod, 0, sizeof(PinyinInputMethod));
+    gPinyinInputMethod->interface.OnKeyPressed = OnKeyPressed;
+    gPinyinInputMethod->interface.OnKeyDraw = OnKeyDraw;
+    gPinyinInputMethod->interface.GetComposition = GetComposition;
+    FS_InitFile(&gPinyinInputMethod->file);
+    if(FS_OpenFile(&gPinyinInputMethod->file, "/keyboard/pinyin_table.bin")) {
+        FS_ReadFile(&gPinyinInputMethod->file, &gPinyinInputMethod->header, sizeof(PinyinTableHeader));
+        gPinyinInputMethod->entries = malloc(sizeof(PinyinTableEntry) * gPinyinInputMethod->header.pinyinNum);
+        FS_SeekFile(&gPinyinInputMethod->file, sizeof(PinyinTableHeader), 0);
+        FS_ReadFile(&gPinyinInputMethod->file, gPinyinInputMethod->entries, sizeof(PinyinTableEntry) * gPinyinInputMethod->header.pinyinNum);
+        gPinyinInputMethod->candidate = malloc(sizeof(u16) * gPinyinInputMethod->header.maxCandidateNum);
+    }
+    else {
+        free(gPinyinInputMethod);
+        gPinyinInputMethod = NULL;
+    }
+}
+
+void DeinitPinyinInputMethod() {
+    if(gPinyinInputMethod) {
+        FS_CloseFile(&gPinyinInputMethod->file);
+        if(gPinyinInputMethod->entries) {
+            free(gPinyinInputMethod->entries);
+        }
+        if(gPinyinInputMethod->candidate) {
+            free(gPinyinInputMethod->candidate);
+        }
+        free(gPinyinInputMethod);
+        gPinyinInputMethod = NULL;
+    }
+}
+
+int SearchPinyinTable() {
+    u32 pinyin = 0;
+    for (int i = 0; i < gPinyinInputMethod->inputLetterNum; i++) {
+        pinyin |= (((gPinyinInputMethod->inputLetter[i] - 'a' + 1) & 0x1F) << (25 - i * 5));
+    }
+    int left = 0;
+    int right = gPinyinInputMethod->header.pinyinNum - 1;
+    while(left <= right) {
+        int mid = (left + right) / 2;
+        if(gPinyinInputMethod->entries[mid].pinyin == pinyin) {
+            return mid;
+        } else if(gPinyinInputMethod->entries[mid].pinyin < pinyin) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    return -1;
+}
+
+void LoadPinyinCandidate() {
+    int index = SearchPinyinTable();
+    if(index != -1) {
+        FS_SeekFile(&gPinyinInputMethod->file, gPinyinInputMethod->header.candidateOffset + gPinyinInputMethod->entries[index].candidateOffset * sizeof(u16), 0);
+        FS_ReadFile(&gPinyinInputMethod->file, gPinyinInputMethod->candidate, gPinyinInputMethod->entries[index].candidateNum * sizeof(u16));
+        gPinyinInputMethod->candidateNum = gPinyinInputMethod->entries[index].candidateNum;
+        gPinyinInputMethod->candidateOffset = 0;
+    } else {
+        gPinyinInputMethod->candidateNum = 0;
+        gPinyinInputMethod->candidateOffset = 0;
+    }
+}
+
+void OnSwitchCandidate(bool isNextPage) {
+    if (gPinyinInputMethod->candidateNum <= MAX_CANDIDATE_NUM ||
+        (isNextPage && gPinyinInputMethod->candidateOffset + MAX_CANDIDATE_NUM >= gPinyinInputMethod->candidateNum) ||
+        (!isNextPage && gPinyinInputMethod->candidateOffset == 0)) {
+        return;
+    }
+    if(isNextPage) {
+        gPinyinInputMethod->candidateOffset += MAX_CANDIDATE_NUM;
+    } else {
+        gPinyinInputMethod->candidateOffset -= MAX_CANDIDATE_NUM;
+    }
+}
+
+static bool OnKeyPressed(VirtualKeyboard *keyboard, Key *key) {
+    if(key->code >= KEYCODE_a && key->code <= KEYCODE_z) {
+        if(gPinyinInputMethod->inputLetterNum < MAX_INPUT_LETTER_NUM) {
+            gPinyinInputMethod->inputLetter[gPinyinInputMethod->inputLetterNum++] = key->code;
+            LoadPinyinCandidate();
+        }
+        return true;
+    } 
+    else if(key->code == KEYCODE_BACKSPACE) {
+        if(gPinyinInputMethod->inputLetterNum > 0) {
+            gPinyinInputMethod->inputLetterNum--;
+            LoadPinyinCandidate();
+            return true;
+        }
+    }
+    else if (key->code == KEYCODE_ENTER) {
+        if (gPinyinInputMethod->inputLetterNum > 0) {
+            for (int i = 0; i < gPinyinInputMethod->inputLetterNum; i++)
+            {
+                TryAddKeycodeToInput(HalfToFullWidth(gPinyinInputMethod->inputLetter[i]));
+            }
+            gPinyinInputMethod->inputLetterNum = 0;
+            gPinyinInputMethod->candidateNum = 0;
+            return true;
+        }
+    }
+    else if (key->code == KEYCODE_SHIFT || key->code == KEYCODE_CAPS_LOCK) {
+        gPinyinInputMethod->inputLetterNum = 0;
+        gPinyinInputMethod->candidateNum = 0;
+    }
+    else if (key->code == KEYCODE_MINUS) {
+        OnSwitchCandidate(false);
+        return true;
+    }
+    else if (key->code == KEYCODE_EQUAL) {
+        OnSwitchCandidate(true);
+        return true;
+    }
+    int index = -1;
+    if (key->code >= KEYCODE_1 && key->code <= KEYCODE_9) {
+        index = key->code - KEYCODE_1;
+    } else if (key->code == KEYCODE_0) {
+        index = 9;
+    }
+    
+    if (index >= 0 && index + gPinyinInputMethod->candidateOffset < gPinyinInputMethod->candidateNum) {
+        TryAddCharToInput(gPinyinInputMethod->candidate[index + gPinyinInputMethod->candidateOffset]);
+        gPinyinInputMethod->inputLetterNum = 0;
+        gPinyinInputMethod->candidateNum = 0;
+        return true;
+    }
+
+    if (key->code >= KEYCODE_SPACE && key->code <= KEYCODE_TILDE) {
+        if (key->code == KEYCODE_PERIOD) {
+            TryAddKeycodeToInput(KEYCODE_CHINESE_PERIOD);
+        } else {
+            TryAddKeycodeToInput(HalfToFullWidth(key->code));
+        }
+        return true;
+    }
+    return false;
+}
+
+static bool OnKeyDraw(const VirtualKeyboard *keyboard, const Key *key) {
+    if (gPinyinInputMethod->candidateNum == 0) {
+        return false;
+    }
+
+    int palIndex, x, y, adv;
+    int index = -1;
+    if (key->code >= KEYCODE_1 && key->code <= KEYCODE_9) {
+        index = key->code - KEYCODE_1;
+    } else if (key->code == KEYCODE_0) {
+        index = 9;
+    }
+    if (index >= 0) {
+        index += gPinyinInputMethod->candidateOffset;
+        if (index < gPinyinInputMethod->candidateNum) {
+            u16 charCode = gPinyinInputMethod->candidate[index];
+            glImage glyph;
+            if (GetExternalGlyph(charCode, &glyph, &palIndex, &adv)) {
+                glSetActiveTexture(glyph.textureID);
+                glAssignColorTable(0, keyboard->externalGlyphKeyPalIds[palIndex]);
+                x = keyboard->x + key->x + (key->width - adv + 1) / 2;
+                y = keyboard->y + key->y + (key->height - glyph.height + 1) / 2;
+                glSprite(x, y, GL_FLIP_NONE, &glyph);
+                return true;
+            }
+        }
+    }
+
+    if (key->code == KEYCODE_MINUS || key->code == KEYCODE_EQUAL) {
+        KeyCode glyphCode = key->code == KEYCODE_MINUS ? KEYCODE_LEFT_TRIANGLE : KEYCODE_RIGHT_TRIANGLE;
+        glImage *glyph = GetDefaultGlyph(glyphCode);
+        if (glyph) {
+            int x = keyboard->x + key->x + (key->width + 1 - glyph->width) / 2;
+            int y = keyboard->y + key->y + keyboard->glyphBaseline - glyph->height;
+            glSetActiveTexture(glyph->textureID);
+            SetDefaultKeysPalette(keyboard->keyTexPalId);
+            glSprite(x, y, GL_FLIP_NONE, glyph);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool GetComposition(VirtualKeyboard *keyboard, TextComposition *composition) {
+    if (gPinyinInputMethod->inputLetterNum == 0) {
+        return false;
+    }
+
+    for (int i = 0; i < gPinyinInputMethod->inputLetterNum; i++) {
+        gPinyinInputMethod->compositionText[i] = gPinyinInputMethod->inputLetter[i];
+    }
+
+    composition->text = gPinyinInputMethod->compositionText;
+    composition->length = gPinyinInputMethod->inputLetterNum;
+    composition->start = keyboard->inputTextBox.cursorPosition;
+    composition->useDefaultGlyph = true;
+    composition->underline = true;
+    return true;
+}
