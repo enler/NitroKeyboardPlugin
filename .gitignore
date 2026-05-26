@@ -6,3 +6,4 @@ build
 common/config.mk
 common/symbols.ld
 __pycache__
+/keyboard.kmod

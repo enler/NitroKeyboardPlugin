@@ -18,7 +18,7 @@ ALL_OBJS := $(OBJS) $(NITRO_LIB_OBJS)
 DEPS   := $(ALL_OBJS:%.o=%.d)
 
 COMPILE_MODE := -mthumb
-DEFS    := -DARM9 -D__NDS__ -D__thumb__ -D__ARM_ARCH=5 -DNITROSDK_VER=$(NITROSDK_VER)
+DEFS    := -DARM9 -D__NDS__ -D__thumb__ -D__ARM_ARCH=5 -DKEYBOARD_DYNAMIC_MODULE -DNITROSDK_VER=$(NITROSDK_VER)
 CFLAGS  := -g -w -Os -std=gnu99 -ffreestanding -mabi=aapcs -march=armv5te -mtune=arm946e-s -mthumb-interwork $(foreach dir,$(INC_DIRS),-I $(dir))
 LDFLAGS := -nostartfiles -nodefaultlibs -Ttext=$(OVERLAY_ADDR) -T linker.ld -T $(SYMBOLS_LD) -Wl,--use-blx -Wl,--wrap=glInit,--wrap=glResetTextures
 
