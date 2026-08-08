@@ -152,6 +152,8 @@ python script/rom_analyzer.py <nds_rom_path> > log.txt
 `OVERLAY_NAME`是overlay的文件名前缀，有些打包工具会用overlay9_开头，请根据实际情况修改  
 `OVERLAY_LDR_ADDR`是overlay_ldr的地址，位于arm9.bin的头部。  
 
+`ENABLE_KEYBOARD_PINYIN_EX`控制拼音输入法实现：默认为`0`，使用`keyborad_pinyin.c`；设置为`1`时使用支持词语和触摸候选栏的`keyborad_pinyin_ex.c`。
+
 arm9头部的2048字节是secure area，其中随机插入了syscalls函数，但大部分还是无用数据，  
 rom_analyzer.py会寻找其中可能无用的区域来作为overlay_ldr的加载地址。  
 
@@ -221,12 +223,45 @@ common目录就是配置文件跟符号文件
 在雷顿的目录下还有一个`keyboard/font.bin`，这是一个单独的字库文件，script下有工具可以生成。  
 此外，在雷顿的目录下还有一个`.gds`文件，这个文件存了谜题的答案，为了演示，我改成了中文答案，因此也放在这里了。  
 
-script下有2个工具用于生成需要的文件  
-分别是`create_pinyin_table.py`跟`create_font.py`，  
+script下提供了生成旧版拼音表、扩展拼音词库和字库的工具。
+
 `create_pinyin_table`用于生成拼音表，命令是  
 ```bash
 python script/create_pinyin_table.py <charmap_path>
 ```  
+
+启用`keyboard_pinyin_ex`时，使用`pinyin_db.bin`作为拼音词库。词库分两步生成。
+
+第一步准备一个UTF-8文本文件，每行只写一个词语，然后安装依赖并生成可人工校对的Rime词库：
+
+```bash
+python -m pip install -r script/requirements.txt
+python script/create_rime_dict.py <word_file> <output_rime_yaml>
+```
+
+脚本使用`pypinyin`生成无声调全拼。超过4个汉字、包含非汉字，或完整拼音超过20个字母的行会被跳过。
+生成后应当打开Rime YAML，检查多音字读音；每行格式为`词语<Tab>拼音<Tab>权重`。初始权重为`0`，数值越大，候选优先级越高。
+
+第二步生成`pinyin_db.bin`。不提供Rime路径时使用项目默认词库：
+
+```bash
+python script/create_pinyin_db.py <charmap_path>
+```
+
+一旦提供Rime路径，就只使用列出的词库，不会隐式加入默认词库：
+
+```bash
+python script/create_pinyin_db.py <charmap_path> <custom_rime_yaml> [more_rime_yaml ...]
+```
+
+如果希望同时使用默认词库和自定义词库，需要把两者都明确写出：
+
+```bash
+python script/create_pinyin_db.py <charmap_path> \
+  third_party/rime-pinyin-simp/pinyin_simp.dict.yaml \
+  <custom_rime_yaml>
+```
+
 `create_font`用于生成字库，命令是  
 ```bash
 python script/create_font.py <charmap_path> <font_path>

@@ -1,4 +1,5 @@
 freetype_py==2.4.0
 ndspy==4.2.0
 pyelftools==0.32
+pypinyin==0.55.0
 yara_python==4.5.1

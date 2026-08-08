@@ -1,0 +1,3 @@
+[submodule "third_party/rime-pinyin-simp"]
+	path = third_party/rime-pinyin-simp
+	url = https://github.com/rime/rime-pinyin-simp.git

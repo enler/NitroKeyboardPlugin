@@ -4,7 +4,13 @@ endif
 
 COMMON_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-include $(COMMON_DIR)/config.mk
+BUILD_CONFIG_FILE := $(COMMON_DIR)/config.mk
+include $(BUILD_CONFIG_FILE)
+
+ENABLE_KEYBOARD_PINYIN_EX ?= 0
+ifneq ($(filter $(ENABLE_KEYBOARD_PINYIN_EX),0 1),$(ENABLE_KEYBOARD_PINYIN_EX))
+$(error ENABLE_KEYBOARD_PINYIN_EX must be 0 or 1)
+endif
 
 OUTPUT_ELF = $(OUTPUT).elf
 OUTPUT_BIN = $(OUTPUT).bin

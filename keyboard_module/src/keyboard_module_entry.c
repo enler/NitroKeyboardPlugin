@@ -80,8 +80,13 @@ void KeyboardModule_Run(void) {
     SetBrightness(0, 0);
 
     InitializeKeyboard(interface);
+#if ENABLE_KEYBOARD_PINYIN_EX
+    InitPinyinInputMethodEx();
+    RegisterKeyboardInputMethod(KEYBOARD_LANG_CHS, GetPinyinInputMethodInterfaceEx());
+#else
     InitPinyinInputMethod();
     RegisterKeyboardInputMethod(KEYBOARD_LANG_CHS, GetPinyinInputMethodInterface());
+#endif
 
     int state = 0;
     int result = 0;
@@ -109,7 +114,11 @@ void KeyboardModule_Run(void) {
     while (i--)
         WaitVBlankIntr();
 
+#if ENABLE_KEYBOARD_PINYIN_EX
+    DeinitPinyinInputMethodEx();
+#else
     DeinitPinyinInputMethod();
+#endif
     glResetTextures();
 
     REG_DISPCNT = dispcnt;

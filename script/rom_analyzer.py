@@ -802,6 +802,7 @@ def analyze_rom(nds_path: str):
             'INJECT_OVERLAY_ID': 0,
             'IS_NITROSDK_THUMB': link_type,
             'NITROSDK_VER': f"0x{sdk_version[0] << 8 | sdk_version[1]:04X}",
+            'ENABLE_KEYBOARD_PINYIN_EX': 0,
         }
         
         save_build_config(build_config, 'config.mk')

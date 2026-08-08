@@ -9,6 +9,9 @@
 #define KEY_BG_COLOR_PRESSED RGB15(31, 31, 31)
 #define TEXTBOX_GLYPH_COLOR RGB15(31, 31, 31)
 #define TEXTBOX_BG_COLOR RGB15(0, 86 >> 3, 179 >> 3)
+#if ENABLE_KEYBOARD_PINYIN_EX
+#define CANDIDATE_BG_COLOR RGB15(15 >> 3, 115 >> 3, 217 >> 3)
+#endif
 #define TEXTBOX_CURSOR_BLINK_INTERVAL 15
 #define TEXTBOX_CURSOR_COLOR TEXTBOX_GLYPH_COLOR
 
@@ -168,6 +171,9 @@ void InitializeKeyboard(const KeyboardGameInterface *gameInterface) {
 
     CreateExternalFontPalette(gVirtualKeyboard->externalGlyphKeyPalIds, KEY_GLYPH_COLOR, KEY_BG_COLOR);
     CreateExternalFontPalette(gVirtualKeyboard->externalGlyphTextBoxPalIds, TEXTBOX_GLYPH_COLOR, TEXTBOX_BG_COLOR);
+#if ENABLE_KEYBOARD_PINYIN_EX
+    CreateExternalFontPalette(gVirtualKeyboard->externalGlyphCandidatePalIds, TEXTBOX_GLYPH_COLOR, CANDIDATE_BG_COLOR);
+#endif
 }
 
 void FinalizeKeyboard(bool isCancelled) {
@@ -408,7 +414,8 @@ void DrawKey(Key *key) {
 
     glBoxFilled(x, y, x + key->width - 1, y + key->height - 1, color);
 
-    if (inputMethodInterface && inputMethodInterface->OnKeyDraw(gVirtualKeyboard, key)) {
+    if (inputMethodInterface && inputMethodInterface->OnKeyDraw &&
+        inputMethodInterface->OnKeyDraw(gVirtualKeyboard, key)) {
         return;
     }
 
@@ -416,6 +423,14 @@ void DrawKey(Key *key) {
         int glyphX = x + (key->width + 1 - key->glyph->width) / 2;
         int glyphY = y + gVirtualKeyboard->glyphBaseline - key->glyph->height;
         glSprite(glyphX, glyphY, GL_FLIP_NONE, key->glyph);
+    }
+}
+
+void DrawInputMethodGlobal() {
+    KeyboardInputMethodInterface *inputMethodInterface =
+        gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
+    if (inputMethodInterface && inputMethodInterface->OnGlobalDraw) {
+        inputMethodInterface->OnGlobalDraw(gVirtualKeyboard);
     }
 }
 
@@ -431,6 +446,7 @@ void DrawKeyboard() {
         Key key = gVirtualKeyboard->functionKeys[i];
         DrawKey(&key);
     }
+    DrawInputMethodGlobal();
     DrawInputTextBox();
 }
 
@@ -532,7 +548,8 @@ void ProcessKey(Key *key, int x, int y, int *result, KeyboardInputMethodInterfac
             *result |= KEY_STATE_PRESSED;
             if (gVirtualKeyboard->isPressed)
                 return;
-            if (inputMethodInterface && inputMethodInterface->OnKeyPressed(gVirtualKeyboard, key)) {
+            if (inputMethodInterface && inputMethodInterface->OnKeyPressed &&
+                inputMethodInterface->OnKeyPressed(gVirtualKeyboard, key)) {
                 return;
             }
             if (key->code == KEYCODE_SHIFT) {
@@ -598,9 +615,29 @@ void ProcessKey(Key *key, int x, int y, int *result, KeyboardInputMethodInterfac
     }
 }
 
+int ProcessInputMethodGlobalTouch(int x, int y) {
+    KeyboardInputMethodInterface *inputMethodInterface =
+        gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
+    if (!inputMethodInterface || !inputMethodInterface->OnGlobalTouch) {
+        return KEY_STATE_NOT_PRESSED;
+    }
+
+    int result = inputMethodInterface->OnGlobalTouch(gVirtualKeyboard, x, y);
+    if (result != KEY_STATE_NOT_PRESSED && gVirtualKeyboard->currentKey) {
+        gVirtualKeyboard->currentKey->isPressed = false;
+        gVirtualKeyboard->currentKey->isHeld = false;
+        gVirtualKeyboard->currentKey = NULL;
+    }
+    return result;
+}
+
 int ProcessKeyTouch(int x, int y) {
     int result = KEY_STATE_NOT_PRESSED;
     KeyboardInputMethodInterface *inputMethodInterface = gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
+
+    result = ProcessInputMethodGlobalTouch(x, y);
+    if (result != KEY_STATE_NOT_PRESSED)
+        return result;
 
     result = ProcessTextBoxTouch(x, y);
     if (result != KEY_STATE_NOT_PRESSED)

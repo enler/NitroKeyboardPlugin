@@ -13,7 +13,15 @@
 
 #define EXTERNAL_FONT_PALETTE_SIZE 2
 
+#ifndef ENABLE_KEYBOARD_PINYIN_EX
+#define ENABLE_KEYBOARD_PINYIN_EX 0
+#endif
+
+#if ENABLE_KEYBOARD_PINYIN_EX
+#define KEYBOARD_HEAP_SIZE (48 * 1024)
+#else
 #define KEYBOARD_HEAP_SIZE (24 * 1024)
+#endif
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
@@ -301,6 +309,8 @@ typedef struct {
     bool (*OnKeyPressed)(VirtualKeyboard *keyboard, Key *key);
     bool (*OnKeyDraw)(const VirtualKeyboard *keyboard, const Key *key);
     bool (*GetComposition)(VirtualKeyboard *keyboard, TextComposition *composition);
+    void (*OnGlobalDraw)(const VirtualKeyboard *keyboard);
+    int (*OnGlobalTouch)(VirtualKeyboard *keyboard, int x, int y);
 } KeyboardInputMethodInterface;
 
 typedef struct VirtualKeyboard {
@@ -319,6 +329,7 @@ typedef struct VirtualKeyboard {
     int glyphTexPalId;
     int externalGlyphKeyPalIds[EXTERNAL_FONT_PALETTE_SIZE];
     int externalGlyphTextBoxPalIds[EXTERNAL_FONT_PALETTE_SIZE];
+    int externalGlyphCandidatePalIds[EXTERNAL_FONT_PALETTE_SIZE];
     TextBox inputTextBox;
     const KeyboardGameInterface *gameInterface;
     KeyboardInputMethodInterface *inputMethodInterface[KEYBOARD_LANG_MAX];
@@ -331,7 +342,9 @@ void InitHeap(void *start, u32 size);
 void InitializeKeyboard(const KeyboardGameInterface *gameInterface);
 void FinalizeKeyboard(bool isCancelled);
 void DrawKeyboard();
+void DrawInputMethodGlobal();
 int HandleKeyboardInput();
+int ProcessInputMethodGlobalTouch(int x, int y);
 void TryAddCharToInput(u16 charCode);
 void TryAddKeycodeToInput(KeyCode keyCode);
 void RegisterKeyboardInputMethod(int lang, KeyboardInputMethodInterface *inputMethodInterface);
@@ -367,6 +380,15 @@ static inline int FindCustomCharCode(const KeycodeConvItem *table, int tableSize
 void InitPinyinInputMethod();
 void DeinitPinyinInputMethod();
 KeyboardInputMethodInterface *GetPinyinInputMethodInterface();
+
+void InitPinyinInputMethodEx();
+void DeinitPinyinInputMethodEx();
+KeyboardInputMethodInterface *GetPinyinInputMethodInterfaceEx();
+/* Returns the candidate count, or -1 for invalid input or a read error. */
+int SearchPinyinDb(const char *pinyin, int pinyinLength);
+int GetPinyinDbCandidateNum();
+/* The returned pointer remains valid until the next search or deinit. */
+bool GetPinyinDbCandidate(int index, const u16 **candidate, int *candidateLength);
 
 void InitKeyboardFont();
 void DeinitKeyboardFont();
