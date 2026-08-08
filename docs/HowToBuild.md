@@ -12,7 +12,8 @@
 
 # 1. 项目目录结构
 
-- **overlay目录**：键盘插件的核心代码实现  
+- **keyboard_module目录**：键盘UI和输入法的主体代码，编译后生成按需加载的`keyboard.kmod`
+- **overlay目录**：常驻的宿主代码，负责监控键盘启动条件、分配堆并加载`keyboard.kmod`
 - **overlay_ldr目录**：用于加载overlay的辅助插件，需要注入到nds的arm9.bin中，并通过hook来调用  
 - **script目录**：存放了一些实用脚本，比如rom_analyzer.py可以帮助你分析rom，寻找键盘插件所需的NitroSDK函数  
 - **example目录**：里面有些示例，我在后文会简单讲解  
@@ -218,7 +219,47 @@ common目录就是配置文件跟符号文件
 
 最后是rom_nitrofs，这个目录下存放的就是键盘插件所需要的资源文件，要打包到游戏的文件系统里，  
 `keyboard/keys.tex`是键盘的UI贴图，跟根目录下的resource里的是一样的，  
-`keyboard/pinyin_table.bin`是拼音表文件，用于实现拼音输入。  
+`keyboard/pinyin_table.bin`是旧版拼音表文件，`keyboard/pinyin_db.bin`是扩展拼音输入法使用的词库。
+
+## 编译和放置keyboard.kmod
+
+在项目根目录执行：
+
+```bash
+make
+```
+
+编译完成后，根目录会生成`keyboard_module.elf`和`keyboard.kmod`。`keyboard_module.elf`保留了ELF信息，用于链接、调试和检查；实际需要打包进ROM的是`keyboard.kmod`。
+
+`keyboard.kmod`包含键盘主体的加载镜像、BSS空间和重定位表，它不是NDS overlay，也不需要加入overlay table。宿主overlay在需要显示键盘时，会从NitroFS读取`keyboard/keyboard.kmod`，把它加载到临时堆中并执行；键盘退出后，这块模块内存会被释放，因此键盘主体不会一直占用内存。
+
+编译后应把文件复制到所选工程的`rom_nitrofs/keyboard`目录，例如：
+
+```bash
+cp keyboard.kmod <project>/rom_nitrofs/keyboard/keyboard.kmod
+```
+
+随后把整个`rom_nitrofs`目录合并或重新打包进ROM。最终ROM中的NitroFS路径必须是：
+
+```text
+keyboard/keyboard.kmod
+```
+
+不要把`keyboard.kmod`放入`rom/overlay`，也不要用它替换`<OVERLAY_NAME>.bin`；后者仍然是负责监控和加载KMOD的宿主overlay。示例工程没有提交`keyboard.kmod`，因为它需要针对当前游戏的`config.mk`、`symbols.ld`和宿主overlay重新链接后生成。
+
+最终的资源目录大致如下：
+
+```text
+rom_nitrofs/
+└── keyboard/
+    ├── keyboard.kmod
+    ├── keys.tex
+    ├── pinyin_table.bin    # ENABLE_KEYBOARD_PINYIN_EX=0
+    ├── pinyin_db.bin       # ENABLE_KEYBOARD_PINYIN_EX=1时改用此文件
+    └── font.bin            # 仅使用外置字库的游戏需要
+```
+
+普通拼音和扩展拼音只需要放置各自使用的一个拼音数据文件。修改`config.mk`、`symbols.ld`、宿主overlay接口或`ENABLE_KEYBOARD_PINYIN_EX`后，应重新执行`make`并替换NitroFS中的`keyboard.kmod`。
 
 在雷顿的目录下还有一个`keyboard/font.bin`，这是一个单独的字库文件，script下有工具可以生成。  
 此外，在雷顿的目录下还有一个`.gds`文件，这个文件存了谜题的答案，为了演示，我改成了中文答案，因此也放在这里了。  
@@ -672,5 +713,4 @@ arm9只不过是把arm7发过来的屏幕位置结合用户对于屏幕的校正
 还有，像DQ5虽然链接了这个函数，  
 但没有调用TP_GetUserInfo跟TP_SetCalibrateParam来设置用户的校正数据，  
 所以在适配的时候特意加上了，确保`TP_GetCalibratedPoint`能正常工作。
-
 
