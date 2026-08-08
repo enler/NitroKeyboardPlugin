@@ -8,6 +8,20 @@
 
 在开始之前，先安装最新的devkitpro，确保libnds的版本是2.0.0，然后再安装python3，根据script目录下的requirements.txt安装必要的库。  
 
+扩展拼音输入法的默认词库[rime-pinyin-simp](https://github.com/rime/rime-pinyin-simp)通过Git submodule引用。首次获取源码时，建议递归克隆：
+
+```bash
+git clone --recurse-submodules https://github.com/enler/NitroKeyboardPlugin.git
+```
+
+如果已经使用普通方式克隆，请在项目根目录补充初始化submodule：
+
+```bash
+git submodule update --init --recursive
+```
+
+该命令会检出项目记录的词库版本。直接下载父仓库的源码压缩包不会包含完整的submodule内容，生成默认`pinyin_db.bin`前仍需单独取得这个词库。
+
 接下来将介绍接入本插件的方法，注意，如果不了解nds的汉化跟逆向工程，阅读本文可能会感到费解。  
 
 # 1. 项目目录结构
@@ -19,6 +33,7 @@
 - **example目录**：里面有些示例，我在后文会简单讲解  
 - **common目录**：存放共用的头文件，以及NitroSDK的函数定义，rom_analyzer.py生成的config.mk跟symbols.ld也是放在这里的  
 - **resource目录**：目前只有一个keys.tex，这是键盘插件的UI贴图  
+- **third_party目录**：存放外部依赖，其中`rime-pinyin-simp`是以Git submodule方式引用的默认拼音词库
 
 # 2. 一些背景知识
 
@@ -283,7 +298,7 @@ python script/create_rime_dict.py <word_file> <output_rime_yaml>
 脚本使用`pypinyin`生成无声调全拼。超过4个汉字、包含非汉字，或完整拼音超过20个字母的行会被跳过。
 生成后应当打开Rime YAML，检查多音字读音；每行格式为`词语<Tab>拼音<Tab>权重`。初始权重为`0`，数值越大，候选优先级越高。
 
-第二步生成`pinyin_db.bin`。不提供Rime路径时使用项目默认词库：
+第二步生成`pinyin_db.bin`。不提供Rime路径时，使用Git submodule中的`third_party/rime-pinyin-simp/pinyin_simp.dict.yaml`。执行前请确认已经运行过`git submodule update --init --recursive`：
 
 ```bash
 python script/create_pinyin_db.py <charmap_path>

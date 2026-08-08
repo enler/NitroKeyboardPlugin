@@ -11,7 +11,7 @@ Nitro Keyboard Plugin 是一个为 NDS 汉化游戏开发的、通用的中文�
 > - 支持词语拼写，同时检索单字和词语候选
 > - 候选字词通过触摸直接输入，并可点击左右箭头翻页
 > - 使用适合 NDS 低内存环境的两级 `pinyin_db.bin`，按需读取词库数据
-> - 支持项目默认的 Rime 词库，也可以导入经 `pypinyin` 生成并人工校对的自定义 Rime YAML 词库
+> - 默认词库来自 [rime-pinyin-simp](https://github.com/rime/rime-pinyin-simp)，也可以导入经 `pypinyin` 生成并人工校对的自定义 Rime YAML 词库
 >
 > 在 `config.mk` 中设置 `ENABLE_KEYBOARD_PINYIN_EX=1` 即可启用；默认值仍为 `0`，继续使用原有拼音输入法。词库生成和放置方法请参阅[接入文档](docs/HowToBuild.md)。
 
@@ -61,3 +61,4 @@ Nitro Keyboard Plugin 是一个为 NDS 汉化游戏开发的、通用的中文�
 
 - 最初的灵感来源：[DSTWO 的 DS 游侠](http://chn.supercard.sc/manual/dstwo/dsyx.htm)，其中有一个简易的键盘供用户编辑金手指
 - 重绘游戏画面的实现：一部分参考了 [nds-bootstrap](https://github.com/DS-Homebrew/nds-bootstrap) 的 inGameMenu 实现
+- 扩展拼音输入法的默认词库：[rime-pinyin-simp](https://github.com/rime/rime-pinyin-simp)，本项目通过 Git submodule 引用
