@@ -1,19 +1,10 @@
 #include <nds.h>
 #include "nitro/fs.h"
 #include "keyboard.h"
+#include "keyboard_style.h"
 #include "touch.h"
 
-#define KEYBOARD_BG_COLOR RGB15(30 >> 3, 144 >> 3, 255 >> 3)
-#define KEY_GLYPH_COLOR RGB15(56 >> 3, 8 >> 3, 120 >> 3)
-#define KEY_BG_COLOR RGB15(135 >> 3, 206 >> 3, 250 >> 3)
-#define KEY_BG_COLOR_PRESSED RGB15(31, 31, 31)
-#define TEXTBOX_GLYPH_COLOR RGB15(31, 31, 31)
-#define TEXTBOX_BG_COLOR RGB15(0, 86 >> 3, 179 >> 3)
-#if ENABLE_KEYBOARD_PINYIN_EX
-#define CANDIDATE_BG_COLOR RGB15(15 >> 3, 115 >> 3, 217 >> 3)
-#endif
 #define TEXTBOX_CURSOR_BLINK_INTERVAL 15
-#define TEXTBOX_CURSOR_COLOR TEXTBOX_GLYPH_COLOR
 
 const u8 KeyboardMap[] = {
     KEYCODE_1, KEYCODE_2, KEYCODE_3, KEYCODE_4, KEYCODE_5, KEYCODE_6, KEYCODE_7, KEYCODE_8, KEYCODE_9, KEYCODE_0, KEYCODE_MINUS, KEYCODE_EQUAL,
@@ -42,6 +33,13 @@ const u8 KeyboardMapShift[] = {
 const u16 gKeysTexPal[] = {
     RGB15(0, 0, 0),
     KEY_GLYPH_COLOR,
+    RGB15(0, 0, 0),
+    RGB15(0, 0, 0),
+};
+
+const u16 gFunctionKeysTexPal[] = {
+    RGB15(0, 0, 0),
+    FUNCTION_KEY_GLYPH_COLOR,
     RGB15(0, 0, 0),
     RGB15(0, 0, 0),
 };
@@ -164,6 +162,10 @@ void InitializeKeyboard(const KeyboardGameInterface *gameInterface) {
     glGenTextures(1, &gVirtualKeyboard->keyTexPalId);
     glBindTexture(0, gVirtualKeyboard->keyTexPalId);
     glColorTableEXT(0, 0, 4, 0, 0, gKeysTexPal);
+
+    glGenTextures(1, &gVirtualKeyboard->functionKeyTexPalId);
+    glBindTexture(0, gVirtualKeyboard->functionKeyTexPalId);
+    glColorTableEXT(0, 0, 4, 0, 0, gFunctionKeysTexPal);
 
     glGenTextures(1, &gVirtualKeyboard->glyphTexPalId);
     glBindTexture(0, gVirtualKeyboard->glyphTexPalId);
@@ -367,6 +369,13 @@ void DrawInputTextBox() {
     int cursorDrawX = 0;
 
     glBoxFilled(textBox->x, textBox->y, textBox->x + textBox->width - 1, textBox->y + textBox->height - 1, TEXTBOX_BG_COLOR);
+    DrawKeyboardOutlineBox(
+        textBox->x - 1,
+        textBox->y - 1,
+        textBox->x + textBox->width,
+        textBox->y + textBox->height,
+        TEXTBOX_BORDER_COLOR
+    );
 
     if (hasLayout) {
         for (int i = layout.drawFrom; i < layout.length; i++) {
@@ -377,7 +386,7 @@ void DrawInputTextBox() {
 
             if (item->underline && item->advance > 0) {
                 int underlineY = textBox->y + textBox->height - 1;
-                glLine(textBox->x + x, underlineY, textBox->x + x + item->advance - 1, underlineY, RGB15(0, 31, 0));
+                glLine(textBox->x + x, underlineY, textBox->x + x + item->advance - 1, underlineY, TEXTBOX_COMPOSITION_COLOR);
             }
             DrawTextBoxLayoutItem(gVirtualKeyboard, textBox, item, x);
         }
@@ -400,6 +409,15 @@ void DrawInputTextBox() {
         textBox->cursorBlinkCounter = 0;
 }
 
+static bool IsFunctionKey(KeyCode keyCode) {
+    return keyCode == KEYCODE_CAPS_LOCK ||
+        keyCode == KEYCODE_SHIFT ||
+        keyCode == KEYCODE_BACKSPACE ||
+        keyCode == KEYCODE_ENTER ||
+        keyCode == KEYCODE_LANGUAGE_CHINISE ||
+        keyCode == KEYCODE_LANGUAGE_ENGLISH;
+}
+
 void DrawKey(Key *key) {
     KeyboardInputMethodInterface *inputMethodInterface = gVirtualKeyboard->inputMethodInterface[gVirtualKeyboard->language];
 
@@ -409,10 +427,17 @@ void DrawKey(Key *key) {
     bool isActive = key->isPressed ||
         (key->code == KEYCODE_SHIFT && gVirtualKeyboard->isShifted) ||
         (key->code == KEYCODE_CAPS_LOCK && gVirtualKeyboard->isCapsLocked);
+    bool isFunctionKey = IsFunctionKey(key->code);
 
-    u16 color = isActive ? KEY_BG_COLOR_PRESSED : KEY_BG_COLOR;
+    u16 color = isActive
+        ? KEY_BG_COLOR_PRESSED
+        : (isFunctionKey ? FUNCTION_KEY_BG_COLOR : KEY_BG_COLOR);
+    u16 borderColor = isFunctionKey
+        ? FUNCTION_KEY_BORDER_COLOR
+        : KEY_BORDER_COLOR;
 
     glBoxFilled(x, y, x + key->width - 1, y + key->height - 1, color);
+    DrawKeyboardOutlineBox(x, y, x + key->width - 1, y + key->height - 1, borderColor);
 
     if (inputMethodInterface && inputMethodInterface->OnKeyDraw &&
         inputMethodInterface->OnKeyDraw(gVirtualKeyboard, key)) {
@@ -422,6 +447,9 @@ void DrawKey(Key *key) {
     if (key->glyph) {
         int glyphX = x + (key->width + 1 - key->glyph->width) / 2;
         int glyphY = y + gVirtualKeyboard->glyphBaseline - key->glyph->height;
+        SetDefaultKeysPalette(isFunctionKey
+            ? gVirtualKeyboard->functionKeyTexPalId
+            : gVirtualKeyboard->keyTexPalId);
         glSprite(glyphX, glyphY, GL_FLIP_NONE, key->glyph);
     }
 }
@@ -435,8 +463,8 @@ void DrawInputMethodGlobal() {
 }
 
 void DrawKeyboard() {
-    glBoxFilled(0, 0, 256, 192, KEYBOARD_BG_COLOR);
-    SetDefaultKeysPalette(gVirtualKeyboard->keyTexPalId);
+    glBoxFilled(0, 0, 255, 191, KEYBOARD_BG_COLOR);
+    DrawKeyboardOutlineBox(0, 0, 255, 191, KEYBOARD_OUTLINE_COLOR);
     for (int i = 0; i < ARRAY_SIZE(gVirtualKeyboard->normalKeys); i++) {
         Key key = gVirtualKeyboard->normalKeys[i];
         DrawKey(&key);

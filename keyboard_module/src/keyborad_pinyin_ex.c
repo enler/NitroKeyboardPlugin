@@ -3,6 +3,7 @@
 #include <string.h>
 #include "nitro/fs.h"
 #include "keyboard.h"
+#include "keyboard_style.h"
 
 #define PINYIN_DB_PATH "/keyboard/pinyin_db.bin"
 #define PINYIN_DB_VERSION 1
@@ -20,9 +21,6 @@
 #define CANDIDATE_ARROW_WIDTH 16
 #define CANDIDATE_TEXT_PADDING 2
 #define CANDIDATE_WORD_SPACING 4
-#define CANDIDATE_BG_COLOR RGB15(15 >> 3, 115 >> 3, 217 >> 3)
-#define CANDIDATE_ARROW_BG_COLOR RGB15(0, 86 >> 3, 179 >> 3)
-
 typedef struct {
     u8 magic[8];
     u16 version;
@@ -640,7 +638,7 @@ static void DrawPinyinCandidateArrow(
 
     glImage *glyph = GetDefaultGlyph(keyCode);
     if (glyph) {
-        SetDefaultKeysPalette(keyboard->glyphTexPalId);
+        SetDefaultKeysPalette(keyboard->functionKeyTexPalId);
         glSprite(
             x + (CANDIDATE_ARROW_WIDTH - glyph->width) / 2,
             y + (CANDIDATE_BAR_HEIGHT - glyph->height) / 2,
@@ -720,6 +718,28 @@ static void DrawPinyinCandidates(const VirtualKeyboard *keyboard) {
     for (int i = 0; i < layout->itemNum; i++) {
         DrawPinyinCandidateWord(keyboard, &layout->items[i], barY);
     }
+
+    glLine(
+        barX + CANDIDATE_ARROW_WIDTH,
+        barY,
+        barX + CANDIDATE_ARROW_WIDTH,
+        barY + CANDIDATE_BAR_HEIGHT - 1,
+        CANDIDATE_BORDER_COLOR
+    );
+    glLine(
+        barX + textBox->width - CANDIDATE_ARROW_WIDTH - 1,
+        barY,
+        barX + textBox->width - CANDIDATE_ARROW_WIDTH - 1,
+        barY + CANDIDATE_BAR_HEIGHT - 1,
+        CANDIDATE_BORDER_COLOR
+    );
+    DrawKeyboardOutlineBox(
+        barX - 1,
+        barY - 1,
+        barX + textBox->width,
+        barY + CANDIDATE_BAR_HEIGHT,
+        CANDIDATE_BORDER_COLOR
+    );
 }
 
 static int ProcessPinyinCandidateTouch(VirtualKeyboard *keyboard, int x, int y) {

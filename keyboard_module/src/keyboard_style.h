@@ -1,0 +1,39 @@
+#ifndef KEYBOARD_STYLE_H
+#define KEYBOARD_STYLE_H
+
+#define KEYBOARD_RGB8(r, g, b) RGB15((r) >> 3, (g) >> 3, (b) >> 3)
+
+#define KEYBOARD_BG_COLOR KEYBOARD_RGB8(247, 247, 245)
+#define KEYBOARD_OUTLINE_COLOR KEYBOARD_RGB8(76, 80, 82)
+
+#define KEY_GLYPH_COLOR KEYBOARD_RGB8(24, 24, 24)
+#define FUNCTION_KEY_GLYPH_COLOR KEYBOARD_RGB8(12, 42, 105)
+#define KEY_BG_COLOR RGB15(31, 31, 31)
+#define FUNCTION_KEY_BG_COLOR KEYBOARD_RGB8(222, 245, 248)
+#define KEY_BG_COLOR_PRESSED KEYBOARD_RGB8(184, 229, 236)
+#define KEY_BORDER_COLOR KEYBOARD_RGB8(148, 151, 152)
+#define FUNCTION_KEY_BORDER_COLOR KEYBOARD_RGB8(70, 153, 166)
+
+#define TEXTBOX_GLYPH_COLOR KEYBOARD_RGB8(24, 24, 24)
+#define TEXTBOX_BG_COLOR RGB15(31, 31, 31)
+#define TEXTBOX_BORDER_COLOR KEYBOARD_RGB8(70, 153, 166)
+#define TEXTBOX_CURSOR_COLOR KEYBOARD_RGB8(0, 169, 211)
+#define TEXTBOX_COMPOSITION_COLOR TEXTBOX_BORDER_COLOR
+
+#define CANDIDATE_BG_COLOR RGB15(31, 31, 31)
+#define CANDIDATE_ARROW_BG_COLOR KEYBOARD_RGB8(222, 245, 248)
+#define CANDIDATE_BORDER_COLOR TEXTBOX_BORDER_COLOR
+
+static inline void DrawKeyboardOutlineBox(
+        int x1,
+        int y1,
+        int x2,
+        int y2,
+        u16 color) {
+    glLine(x1, y1, x2, y1, color);
+    glLine(x1, y2, x2, y2, color);
+    glLine(x1, y1 + 1, x1, y2 - 1, color);
+    glLine(x2, y1 + 1, x2, y2 - 1, color);
+}
+
+#endif

@@ -326,6 +326,7 @@ typedef struct VirtualKeyboard {
     int language;
     int state;
     int keyTexPalId;
+    int functionKeyTexPalId;
     int glyphTexPalId;
     int externalGlyphKeyPalIds[EXTERNAL_FONT_PALETTE_SIZE];
     int externalGlyphTextBoxPalIds[EXTERNAL_FONT_PALETTE_SIZE];
