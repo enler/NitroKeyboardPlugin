@@ -23,6 +23,12 @@ Nitro Keyboard Plugin 是一个为 NDS 汉化游戏开发的、通用的中文�
 
 <table>
   <tr>
+    <th colspan="2">扩展拼音输入法（美化版）</th>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="preview/preview_pinyin_ex.png" alt="扩展拼音输入法美化版效果演示" width="360"></td>
+  </tr>
+  <tr>
     <th>心金</th>
     <th>雷顿教授</th>
   </tr>
